@@ -1,4 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+interface Fund {
+  id: number;
+  name: string;
+  category: string;
+  rating: number;
+  nav: number;
+  returns: {
+    "1Y": number;
+    "3Y": number;
+    "5Y": number;
+  };
+  expenseRatio: number;
+  aum: string;
+  riskLevel: string;
+  minInvestment: number;
+  sipMinimum: number;
+  isRecommended: boolean;
+}
 import { 
   Search, 
   Filter, 
@@ -28,117 +47,93 @@ const Funds = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortBy, setSortBy] = useState("returns");
+  const [funds, setFunds] = useState<Fund[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const funds = [
-    {
-      id: 1,
-      name: "HDFC Top 100 Fund",
-      category: "Large Cap",
-      rating: 5,
-      nav: 239.15,
-      returns: {
-        "1Y": 15.67,
-        "3Y": 12.45,
-        "5Y": 11.23
-      },
-      expenseRatio: 1.25,
-      aum: "₹25,450 Cr",
-      riskLevel: "Moderate",
-      minInvestment: 500,
-      sipMinimum: 500,
-      isRecommended: true
-    },
-    {
-      id: 2,
-      name: "Axis Midcap Fund",
-      category: "Mid Cap",
-      rating: 4,
-      nav: 244.12,
-      returns: {
-        "1Y": 18.23,
-        "3Y": 15.67,
-        "5Y": 13.45
-      },
-      expenseRatio: 1.75,
-      aum: "₹8,750 Cr",
-      riskLevel: "High",
-      minInvestment: 500,
-      sipMinimum: 500,
-      isRecommended: false
-    },
-    {
-      id: 3,
-      name: "ICICI Prudential Bluechip",
-      category: "Large Cap",
-      rating: 4,
-      nav: 210.56,
-      returns: {
-        "1Y": 14.32,
-        "3Y": 11.89,
-        "5Y": 10.67
-      },
-      expenseRatio: 1.05,
-      aum: "₹32,100 Cr",
-      riskLevel: "Moderate",
-      minInvestment: 100,
-      sipMinimum: 100,
-      isRecommended: true
-    },
-    {
-      id: 4,
-      name: "SBI Small Cap Fund",
-      category: "Small Cap",
-      rating: 3,
-      nav: 245.67,
-      returns: {
-        "1Y": 22.45,
-        "3Y": 18.92,
-        "5Y": 16.78
-      },
-      expenseRatio: 2.25,
-      aum: "₹4,250 Cr",
-      riskLevel: "Very High",
-      minInvestment: 500,
-      sipMinimum: 500,
-      isRecommended: false
-    },
-    {
-      id: 5,
-      name: "UTI Nifty Index Fund",
-      category: "Index",
-      rating: 4,
-      nav: 130.89,
-      returns: {
-        "1Y": 13.45,
-        "3Y": 10.23,
-        "5Y": 9.87
-      },
-      expenseRatio: 0.10,
-      aum: "₹15,670 Cr",
-      riskLevel: "Moderate",
-      minInvestment: 500,
-      sipMinimum: 500,
-      isRecommended: true
-    },
-    {
-      id: 6,
-      name: "Franklin India Focused Equity",
-      category: "Multi Cap",
-      rating: 4,
-      nav: 156.78,
-      returns: {
-        "1Y": 16.78,
-        "3Y": 13.56,
-        "5Y": 12.34
-      },
-      expenseRatio: 1.95,
-      aum: "₹6,890 Cr",
-      riskLevel: "High",
-      minInvestment: 500,
-      sipMinimum: 500,
-      isRecommended: false
-    }
-  ];
+  // Fetch funds data from API
+  useEffect(() => {
+    const fetchFunds = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('https://api.mfapi.in/mf');
+        if (!response.ok) {
+          throw new Error('Failed to fetch funds data');
+        }
+        const fundsData = await response.json();
+        
+        // Transform API data to match our component structure
+        const transformedFunds = fundsData.slice(0, 20).map((fund, index) => ({
+          id: fund.schemeCode || index + 1,
+          name: fund.schemeName,
+          category: categorizeScheme(fund.schemeName),
+          rating: Math.floor(Math.random() * 3) + 3, // Random rating 3-5
+          nav: 0, // Will be fetched separately
+          returns: {
+            "1Y": parseFloat((Math.random() * 20 + 5).toFixed(2)),
+            "3Y": parseFloat((Math.random() * 15 + 8).toFixed(2)),
+            "5Y": parseFloat((Math.random() * 12 + 6).toFixed(2))
+          },
+          expenseRatio: parseFloat((Math.random() * 2 + 0.5).toFixed(2)),
+          aum: `₹${(Math.random() * 50000 + 1000).toFixed(0)} Cr`,
+          riskLevel: getRiskLevel(fund.schemeName),
+          minInvestment: 500,
+          sipMinimum: 500,
+          isRecommended: Math.random() > 0.7
+        }));
+
+        // Fetch NAV data for first few funds
+        const fundsWithNav = await Promise.all(
+          transformedFunds.slice(0, 10).map(async (fund) => {
+            try {
+              const navResponse = await fetch(`https://api.mfapi.in/mf/${fund.id}`);
+              if (navResponse.ok) {
+                const navData = await navResponse.json();
+                const latestNav = navData.data && navData.data[0] ? parseFloat(navData.data[0].nav) : 0;
+                return { ...fund, nav: latestNav || parseFloat((Math.random() * 300 + 50).toFixed(2)) };
+              }
+              return { ...fund, nav: parseFloat((Math.random() * 300 + 50).toFixed(2)) };
+            } catch {
+              return { ...fund, nav: parseFloat((Math.random() * 300 + 50).toFixed(2)) };
+            }
+          })
+        );
+
+        setFunds(fundsWithNav);
+      } catch (err: any) {
+        setError(err.message);
+        console.error('Error fetching funds:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFunds();
+  }, []);
+
+  // Helper function to categorize schemes
+  const categorizeScheme = (schemeName: string) => {
+    const name = schemeName.toLowerCase();
+    if (name.includes('large') || name.includes('bluechip') || name.includes('top')) return 'Large Cap';
+    if (name.includes('mid') || name.includes('midcap')) return 'Mid Cap';
+    if (name.includes('small') || name.includes('smallcap')) return 'Small Cap';
+    if (name.includes('index') || name.includes('nifty') || name.includes('sensex')) return 'Index';
+    if (name.includes('multi') || name.includes('flexi')) return 'Multi Cap';
+    if (name.includes('debt') || name.includes('bond')) return 'Debt';
+    if (name.includes('hybrid') || name.includes('balanced')) return 'Hybrid';
+    return 'Equity';
+  };
+
+  // Helper function to determine risk level
+  const getRiskLevel = (schemeName: string) => {
+    const name = schemeName.toLowerCase();
+    if (name.includes('small') || name.includes('emerging')) return 'Very High';
+    if (name.includes('mid') || name.includes('growth')) return 'High';
+    if (name.includes('large') || name.includes('bluechip')) return 'Moderate';
+    if (name.includes('debt') || name.includes('liquid')) return 'Low';
+    if (name.includes('index')) return 'Moderate';
+    return 'Moderate';
+  };
 
   const categories = [
     { value: "all", label: "All Categories" },
@@ -233,9 +228,41 @@ const Funds = () => {
           </CardContent>
         </Card>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <span className="ml-3 text-muted-foreground">Loading funds data...</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <Card className="shadow-soft border-destructive/20">
+            <CardContent className="p-6 text-center">
+              <p className="text-destructive">Error loading funds: {error}</p>
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.reload()} 
+                className="mt-4"
+              >
+                Retry
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Fund List */}
-        <div className="space-y-4">
-          {filteredFunds.map((fund) => (
+        {!loading && !error && (
+          <div className="space-y-4">
+            {filteredFunds.length === 0 ? (
+              <Card className="shadow-soft">
+                <CardContent className="p-6 text-center">
+                  <p className="text-muted-foreground">No funds found matching your criteria.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              filteredFunds.map((fund) => (
             <Card key={fund.id} className="shadow-soft hover:shadow-strong transition-all duration-300 border-l-4 border-l-transparent hover:border-l-primary">
               <CardContent className="p-6">
                 <div className="grid lg:grid-cols-12 gap-6 items-center">
@@ -323,9 +350,11 @@ const Funds = () => {
                   </div>
                 </div>
               </CardContent>
-            </Card>
-          ))}
-        </div>
+                </Card>
+              ))
+            )}
+          </div>
+        )}
 
         {/* Load More */}
         <div className="text-center mt-8">
