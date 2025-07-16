@@ -24,6 +24,11 @@ export const Calculators = () => {
   const [goalAmount, setGoalAmount] = useState(1000000);
   const [goalYears, setGoalYears] = useState(10);
   const [goalRate, setGoalRate] = useState(12);
+  
+  const [taxInvestment, setTaxInvestment] = useState(150000);
+  const [taxBracket, setTaxBracket] = useState(30);
+  const [taxYears, setTaxYears] = useState(3);
+  const [taxRate, setTaxRate] = useState(12);
 
   // SIP Calculation
   const calculateSIP = () => {
@@ -53,9 +58,20 @@ export const Calculators = () => {
     return { requiredSIP };
   };
 
+  // Tax Savings Calculation
+  const calculateTaxSavings = () => {
+    const taxSaved = Math.min(taxInvestment, 150000) * (taxBracket / 100); // Max 80C limit is 1.5L
+    const futureValue = taxInvestment * Math.pow(1 + taxRate / 100, taxYears);
+    const gains = futureValue - taxInvestment;
+    const netBenefit = taxSaved + gains;
+    
+    return { taxSaved, futureValue, gains, netBenefit, lockInPeriod: taxYears };
+  };
+
   const sipResult = calculateSIP();
   const lumpResult = calculateLumpsum();
   const goalResult = calculateGoal();
+  const taxResult = calculateTaxSavings();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -311,24 +327,96 @@ export const Calculators = () => {
             </TabsContent>
 
             <TabsContent value="tax">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Receipt className="h-5 w-5 text-primary" />
-                    Tax Savings Calculator (ELSS)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground mb-4">
-                      Calculate your tax savings with ELSS mutual funds under Section 80C
-                    </p>
-                    <Button className="bg-gradient-primary">
-                      Coming Soon
+              <div className="grid lg:grid-cols-2 gap-8">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Receipt className="h-5 w-5 text-primary" />
+                      Tax Savings Calculator (ELSS)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div>
+                      <Label htmlFor="tax-investment">Investment Amount (Annual)</Label>
+                      <Input
+                        id="tax-investment"
+                        type="number"
+                        value={taxInvestment}
+                        onChange={(e) => setTaxInvestment(Number(e.target.value))}
+                        className="mt-1"
+                        placeholder="Max ₹1,50,000 under 80C"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="tax-bracket">Tax Bracket (%)</Label>
+                      <Input
+                        id="tax-bracket"
+                        type="number"
+                        value={taxBracket}
+                        onChange={(e) => setTaxBracket(Number(e.target.value))}
+                        className="mt-1"
+                        placeholder="5, 20, 30"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="tax-years">Investment Period (Years)</Label>
+                      <Input
+                        id="tax-years"
+                        type="number"
+                        value={taxYears}
+                        onChange={(e) => setTaxYears(Number(e.target.value))}
+                        className="mt-1"
+                        min="3"
+                        placeholder="Minimum 3 years (ELSS lock-in)"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="tax-rate">Expected Annual Return (%)</Label>
+                      <Input
+                        id="tax-rate"
+                        type="number"
+                        step="0.1"
+                        value={taxRate}
+                        onChange={(e) => setTaxRate(Number(e.target.value))}
+                        className="mt-1"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-success to-success/80 text-success-foreground">
+                  <CardHeader>
+                    <CardTitle>Tax Savings Benefits</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span>Immediate Tax Saved</span>
+                      <span className="font-bold text-xl">{formatCurrency(taxResult.taxSaved)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>Future Value</span>
+                      <span className="font-medium">{formatCurrency(taxResult.futureValue)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>Capital Gains</span>
+                      <span className="font-medium">{formatCurrency(taxResult.gains)}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-t pt-2">
+                      <span className="font-bold">Total Benefit</span>
+                      <span className="font-bold text-xl">{formatCurrency(taxResult.netBenefit)}</span>
+                    </div>
+                    <div className="bg-white/10 p-3 rounded-md">
+                      <p className="text-sm">
+                        <strong>Lock-in Period:</strong> {taxResult.lockInPeriod} years (ELSS requirement)
+                      </p>
+                    </div>
+                    <Button className="w-full mt-4 bg-white text-success hover:bg-white/90">
+                      Invest in ELSS
+                      <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
           </Tabs>
         </div>
