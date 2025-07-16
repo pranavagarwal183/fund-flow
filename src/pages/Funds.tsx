@@ -12,11 +12,45 @@ interface Fund {
     "5Y": number;
   };
   expenseRatio: number;
+  exitLoad: string;
   aum: string;
   riskLevel: string;
   minInvestment: number;
   sipMinimum: number;
   isRecommended: boolean;
+}
+
+interface FundDetail {
+  id: number;
+  name: string;
+  category: string;
+  rating: number;
+  nav: number;
+  returns: {
+    "1Y": number;
+    "3Y": number;
+    "5Y": number;
+    "Inception": number;
+  };
+  expenseRatio: number;
+  exitLoad: string;
+  aum: string;
+  riskLevel: string;
+  minInvestment: number;
+  sipMinimum: number;
+  isRecommended: boolean;
+  fundManager: string;
+  inceptionDate: string;
+  benchmark: string;
+  fundSize: string;
+  portfolio: Array<{
+    stock: string;
+    allocation: number;
+  }>;
+  sectorAllocation: Array<{
+    sector: string;
+    allocation: number;
+  }>;
 }
 import { 
   Search, 
@@ -27,7 +61,13 @@ import {
   Eye,
   ShoppingCart,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  X,
+  Calendar,
+  User,
+  Briefcase,
+  Target,
+  PieChart
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,6 +82,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const Funds = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -50,6 +91,8 @@ const Funds = () => {
   const [funds, setFunds] = useState<Fund[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedFund, setSelectedFund] = useState<FundDetail | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
 
   // Fetch funds data from comprehensive API sources
   useEffect(() => {
@@ -86,6 +129,7 @@ const Funds = () => {
             nav: 0, // Will be fetched separately
             returns: getRealisticReturns(category, riskLevel),
             expenseRatio: getRealisticExpenseRatio(category),
+            exitLoad: getRealisticExitLoad(category),
             aum: `₹${(Math.random() * 80000 + 2000).toFixed(0)} Cr`,
             riskLevel,
             minInvestment: category === 'Debt' ? 1000 : 500,
@@ -206,6 +250,18 @@ const Funds = () => {
     return parseFloat((Math.random() * (range[1] - range[0]) + range[0]).toFixed(2));
   };
 
+  const getRealisticExitLoad = (category: string) => {
+    const exitLoads = [
+      "1% if redeemed within 1 year",
+      "0.5% if redeemed within 6 months", 
+      "1% if redeemed within 365 days",
+      "Nil",
+      "0.25% if redeemed within 90 days",
+      "1% if redeemed before 1 year"
+    ];
+    return exitLoads[Math.floor(Math.random() * exitLoads.length)];
+  };
+
   const getRecommendedStatus = (category: string, schemeName: string) => {
     const name = schemeName.toLowerCase();
     // Mark popular and well-performing funds as recommended
@@ -217,6 +273,84 @@ const Funds = () => {
       return true;
     }
     return Math.random() > 0.8; // 20% chance for others
+  };
+
+  const fetchFundDetails = async (fund: Fund) => {
+    setDetailsLoading(true);
+    try {
+      // Simulate API call for detailed fund information
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const detailedFund: FundDetail = {
+        ...fund,
+        returns: {
+          ...fund.returns,
+          "Inception": parseFloat((fund.returns["5Y"] * 0.75 + (Math.random() - 0.5) * 3).toFixed(2))
+        },
+        fundManager: getFundManager(fund.name),
+        inceptionDate: getInceptionDate(),
+        benchmark: getBenchmark(fund.category),
+        fundSize: fund.aum,
+        portfolio: generatePortfolio(),
+        sectorAllocation: generateSectorAllocation()
+      };
+      
+      setSelectedFund(detailedFund);
+    } catch (error) {
+      console.error('Error fetching fund details:', error);
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
+
+  const getFundManager = (fundName: string) => {
+    const managers = [
+      "Rajeev Thakkar", "Prashant Jain", "Anil Bamboli", "Milind Muchhala",
+      "Devender Singhal", "Sankaran Naren", "Rakesh Jhunjhunwala", "R. Srinivasan"
+    ];
+    return managers[Math.floor(Math.random() * managers.length)];
+  };
+
+  const getInceptionDate = () => {
+    const years = Math.floor(Math.random() * 20) + 2005;
+    const month = Math.floor(Math.random() * 12) + 1;
+    const day = Math.floor(Math.random() * 28) + 1;
+    return `${day.toString().padStart(2, '0')}-${month.toString().padStart(2, '0')}-${years}`;
+  };
+
+  const getBenchmark = (category: string) => {
+    const benchmarks = {
+      'Large Cap': 'NIFTY 100 TRI',
+      'Mid Cap': 'NIFTY Midcap 100 TRI',
+      'Small Cap': 'NIFTY Smallcap 100 TRI',
+      'Multi Cap': 'NIFTY 500 TRI',
+      'Index': 'NIFTY 50 TRI',
+      'Debt': 'CRISIL Composite Bond Fund Index',
+      'Hybrid': 'CRISIL Hybrid 35+65 Aggressive Index'
+    };
+    return benchmarks[category] || 'NIFTY 500 TRI';
+  };
+
+  const generatePortfolio = () => {
+    const stocks = [
+      'Reliance Industries', 'TCS', 'HDFC Bank', 'Infosys', 'ICICI Bank',
+      'Hindustan Unilever', 'ITC', 'State Bank of India', 'Bharti Airtel', 'Kotak Mahindra Bank'
+    ];
+    return stocks.slice(0, 5).map(stock => ({
+      stock,
+      allocation: parseFloat((Math.random() * 10 + 2).toFixed(2))
+    }));
+  };
+
+  const generateSectorAllocation = () => {
+    const sectors = [
+      'Financial Services', 'Information Technology', 'Consumer Goods',
+      'Healthcare', 'Energy', 'Automobile', 'Telecom', 'Infrastructure'
+    ];
+    return sectors.slice(0, 5).map(sector => ({
+      sector,
+      allocation: parseFloat((Math.random() * 20 + 5).toFixed(2))
+    }));
   };
 
   const categories = [
@@ -403,8 +537,8 @@ const Funds = () => {
                   <div className="lg:col-span-3">
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Expense Ratio:</span>
-                        <span className="font-medium">{fund.expenseRatio}%</span>
+                        <span className="text-muted-foreground">Exit Load:</span>
+                        <span className="font-medium">{fund.exitLoad}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Risk Level:</span>
@@ -426,9 +560,14 @@ const Funds = () => {
                         <ShoppingCart className="h-4 w-4 mr-2" />
                         Invest Now
                       </Button>
-                      <Button size="sm" variant="outline">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => fetchFundDetails(fund)}
+                        disabled={detailsLoading}
+                      >
                         <Eye className="h-4 w-4 mr-2" />
-                        View Details
+                        {detailsLoading ? 'Loading...' : 'View Details'}
                       </Button>
                     </div>
                   </div>
@@ -447,6 +586,186 @@ const Funds = () => {
           </Button>
         </div>
       </main>
+      
+      {/* Fund Details Modal */}
+      <Dialog open={!!selectedFund} onOpenChange={() => setSelectedFund(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>{selectedFund?.name}</span>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setSelectedFund(null)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedFund && (
+            <div className="space-y-6">
+              {/* Fund Overview */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center">
+                      <Target className="h-5 w-5 mr-2" />
+                      Fund Overview
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Category:</span>
+                      <Badge variant="outline">{selectedFund.category}</Badge>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Current NAV:</span>
+                      <span className="font-medium">₹{selectedFund.nav}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Fund Size:</span>
+                      <span className="font-medium">{selectedFund.fundSize}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Expense Ratio:</span>
+                      <span className="font-medium">{selectedFund.expenseRatio}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Exit Load:</span>
+                      <span className="font-medium">{selectedFund.exitLoad}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Risk Level:</span>
+                      <span className={`font-medium ${getRiskColor(selectedFund.riskLevel)}`}>
+                        {selectedFund.riskLevel}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center">
+                      <User className="h-5 w-5 mr-2" />
+                      Fund Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Fund Manager:</span>
+                      <span className="font-medium">{selectedFund.fundManager}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Inception Date:</span>
+                      <span className="font-medium">{selectedFund.inceptionDate}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Benchmark:</span>
+                      <span className="font-medium text-sm">{selectedFund.benchmark}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Min Investment:</span>
+                      <span className="font-medium">{formatCurrency(selectedFund.minInvestment)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Min SIP:</span>
+                      <span className="font-medium">{formatCurrency(selectedFund.sipMinimum)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Rating:</span>
+                      <div className="flex items-center">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star 
+                            key={i} 
+                            className={`h-4 w-4 ${i < selectedFund.rating ? 'text-warning fill-current' : 'text-muted-foreground'}`} 
+                          />
+                        ))}
+                        <span className="ml-1 font-medium">({selectedFund.rating})</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Returns Performance */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center">
+                    <TrendingUp className="h-5 w-5 mr-2" />
+                    Returns Performance
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {Object.entries(selectedFund.returns).map(([period, return_]) => (
+                      <div key={period} className="text-center p-3 bg-muted/30 rounded-lg">
+                        <div className="text-sm text-muted-foreground mb-1">{period}</div>
+                        <div className={`text-xl font-bold ${return_ >= 0 ? 'text-success' : 'text-destructive'}`}>
+                          {return_ >= 0 ? '+' : ''}{return_}%
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Portfolio Holdings */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center">
+                      <Briefcase className="h-5 w-5 mr-2" />
+                      Top Holdings
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {selectedFund.portfolio.map((holding, index) => (
+                        <div key={index} className="flex justify-between items-center">
+                          <span className="text-sm">{holding.stock}</span>
+                          <span className="font-medium">{holding.allocation}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center">
+                      <PieChart className="h-5 w-5 mr-2" />
+                      Sector Allocation
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {selectedFund.sectorAllocation.map((sector, index) => (
+                        <div key={index} className="flex justify-between items-center">
+                          <span className="text-sm">{sector.sector}</span>
+                          <span className="font-medium">{sector.allocation}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-center space-x-4 pt-4">
+                <Button size="lg" className="bg-gradient-primary">
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Start SIP
+                </Button>
+                <Button size="lg" variant="outline">
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Lumpsum Investment
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       
       <Footer />
     </div>
