@@ -84,13 +84,13 @@ export const Footer = () => {
             <h3 className="font-semibold text-lg mb-6">Resources</h3>
             <ul className="space-y-3">
               <li>
-                <Link to="/blog" className="text-background/80 hover:text-background transition-colors">
-                  Investment Blog
+                <Link to="/mutual-funds" className="text-background/80 hover:text-background transition-colors">
+                  Mutual Fund Education
                 </Link>
               </li>
               <li>
-                <Link to="/research" className="text-background/80 hover:text-background transition-colors">
-                  Market Research
+                <Link to="/blog" className="text-background/80 hover:text-background transition-colors">
+                  Investment Blog
                 </Link>
               </li>
               <li>
@@ -160,7 +160,7 @@ export const Footer = () => {
               <Link to="/terms" className="text-background/80 hover:text-background transition-colors">
                 Terms of Service
               </Link>
-              <Link to="/disclaimer" className="text-background/80 hover:text-background transition-colors">
+              <Link to="/risk-disclaimer" className="text-background/80 hover:text-background transition-colors">
                 Risk Disclaimer
               </Link>
               <Link to="/grievance" className="text-background/80 hover:text-background transition-colors">
@@ -169,13 +169,13 @@ export const Footer = () => {
             </div>
           </div>
           
-          <div className="mt-6 pt-6 border-t border-background/20 text-xs text-background/60 leading-relaxed">
-            <p className="mb-2">
-              <strong>Important:</strong> Mutual Fund investments are subject to market risks. Please read all scheme-related documents carefully before investing. Past performance is not indicative of future returns.
-            </p>
+          <div className="mt-6 pt-6 border-t border-background/20 text-xs text-background/60 text-center">
             <p>
-              FundFlow is a SEBI registered Investment Adviser. We do not guarantee returns and do not accept liability for investment losses. 
-              All investment decisions should be taken in consultation with your financial advisor.
+              For detailed risk information and disclaimers, please visit our{" "}
+              <Link to="/risk-disclaimer" className="text-primary hover:underline">
+                Risk Disclaimer
+              </Link>{" "}
+              page.
             </p>
           </div>
         </div>

@@ -7,6 +7,9 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Funds from "./pages/Funds";
 import Goals from "./pages/Goals";
+import Calculators from "./pages/Calculators";
+import MutualFunds from "./pages/MutualFunds";
+import RiskDisclaimer from "./pages/RiskDisclaimer";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 
@@ -23,6 +26,9 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/funds" element={<Funds />} />
           <Route path="/goals" element={<Goals />} />
+          <Route path="/calculators" element={<Calculators />} />
+          <Route path="/mutual-funds" element={<MutualFunds />} />
+          <Route path="/risk-disclaimer" element={<RiskDisclaimer />} />
           <Route path="/privacy" element={<Privacy />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
