@@ -29,20 +29,25 @@ export const Header = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center space-x-6">
+            <Link to="/services" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+              Services
+            </Link>
             <Link to="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-              Dashboard
+              My Journey
             </Link>
             <Link to="/funds" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-              Explore Funds
+              Portfolio
+            </Link>
+            <Link to="/watchlist" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+              Watchlist
+            </Link>
+            <Link to="/reports" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+              Reports
             </Link>
             <Link to="/calculators" className="flex items-center space-x-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
               <Calculator className="h-4 w-4" />
               <span>Calculators</span>
-            </Link>
-            <Link to="/goals" className="flex items-center space-x-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-              <Target className="h-4 w-4" />
-              <span>Goals</span>
             </Link>
           </nav>
 
@@ -70,12 +75,20 @@ export const Header = () => {
           <div className="md:hidden py-4 border-t">
             <nav className="flex flex-col space-y-4">
               <Link 
+                to="/services" 
+                className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <TrendingUp className="h-4 w-4" />
+                <span>Services</span>
+              </Link>
+              <Link 
                 to="/dashboard" 
                 className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
                 <PieChart className="h-4 w-4" />
-                <span>Dashboard</span>
+                <span>My Journey</span>
               </Link>
               <Link 
                 to="/funds" 
@@ -83,7 +96,23 @@ export const Header = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 <TrendingUp className="h-4 w-4" />
-                <span>Explore Funds</span>
+                <span>Portfolio</span>
+              </Link>
+              <Link 
+                to="/watchlist" 
+                className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Target className="h-4 w-4" />
+                <span>Watchlist</span>
+              </Link>
+              <Link 
+                to="/reports" 
+                className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Target className="h-4 w-4" />
+                <span>Reports</span>
               </Link>
               <Link 
                 to="/calculators" 
@@ -92,14 +121,6 @@ export const Header = () => {
               >
                 <Calculator className="h-4 w-4" />
                 <span>Calculators</span>
-              </Link>
-              <Link 
-                to="/goals" 
-                className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <Target className="h-4 w-4" />
-                <span>Goals</span>
               </Link>
               <div className="flex flex-col space-y-2 pt-4 border-t">
                 <Button variant="ghost" size="sm" className="justify-start">
