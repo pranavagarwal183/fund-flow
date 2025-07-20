@@ -22,11 +22,12 @@ import {
 
 const Services = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background">
       <Header />
       
-      {/* Hero Section */}
-      <section className="bg-gradient-hero py-20">
+      <div className="flex-1">
+        {/* Hero Section */}
+        <section className="bg-gradient-hero py-20">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-6xl font-bold text-primary-foreground mb-6">
             Complete Investment Services
@@ -502,6 +503,7 @@ const Services = () => {
           </div>
         </div>
       </section>
+      </div>
 
       <Footer />
     </div>

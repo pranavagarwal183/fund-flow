@@ -4,7 +4,7 @@ import { Footer } from "@/components/layout/Footer";
 
 const MutualFunds = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background">
       <Header />
       <MutualFundEducation />
       <Footer />

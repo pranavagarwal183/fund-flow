@@ -119,5 +119,15 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Ensure page always starts from top */
+  html, body {
+    scroll-padding-top: 0;
   }
 }
