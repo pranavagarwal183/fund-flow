@@ -1,9 +1,12 @@
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Privacy = () => {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="flex flex-col min-h-screen bg-background">
+      <Header />
+      <div className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-foreground mb-4">Privacy Policy</h1>
           <p className="text-muted-foreground">
@@ -139,6 +142,8 @@ const Privacy = () => {
           </p>
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 };

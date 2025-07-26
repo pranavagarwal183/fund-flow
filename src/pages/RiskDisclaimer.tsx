@@ -5,10 +5,10 @@ import { AlertTriangle, Shield, Info, FileText } from "lucide-react";
 
 const RiskDisclaimer = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background">
       <Header />
       
-      <div className="container mx-auto px-4 py-12">
+      <div className="flex-1 container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <div className="bg-primary/10 p-4 rounded-full w-fit mx-auto mb-6">
