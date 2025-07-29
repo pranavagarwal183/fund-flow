@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+package-lock.json
+bun.lockb
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+
+# Environment files
+.env*
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+
+# Public assets
+public/
+
+# Config files that should not be formatted
+*.config.js
+*.config.ts
+vite.config.ts
