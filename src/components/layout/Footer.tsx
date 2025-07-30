@@ -150,7 +150,7 @@ export const Footer = () => {
         <div className="border-t border-background/20 mt-12 pt-8">
           <div className="flex flex-col lg:flex-row justify-between items-center space-y-4 lg:space-y-0">
             <div className="text-background/80 text-sm">
-              © 2024 FundFlow. All rights reserved.
+              © 2025 FundFlow. All rights reserved.
             </div>
             
             <div className="flex flex-wrap justify-center lg:justify-end space-x-6 text-sm">
