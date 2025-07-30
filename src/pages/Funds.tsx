@@ -266,4 +266,4 @@ const Funds = () => {
   );
 };
 
-export default Watchlist;
+export default Funds;
