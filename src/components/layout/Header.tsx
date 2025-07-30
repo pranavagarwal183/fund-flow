@@ -1,17 +1,26 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { 
-  TrendingUp, 
-  Menu, 
-  X, 
-  Calculator, 
-  PieChart, 
-  Target, 
-  User 
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import {
+  TrendingUp,
+  Menu,
+  X,
+  Calculator,
+  PieChart,
+  Target,
+  User,
+  BarChart3,
+  FolderKanban,
 } from "lucide-react";
-import { useAuth } from "../AuthProvider"; // adjust path if needed
+import { useAuth } from "../AuthProvider"; // Adjust path as needed
 import { supabase } from "@/integrations/supabase/client";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -39,25 +48,54 @@ export const Header = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/services" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+            <Link
+              to="/"
+              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            >
+              Home
+            </Link>
+            <Link
+              to="/services"
+              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            >
               Services
             </Link>
-            <Link to="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-              My Journey
-            </Link>
-            <Link to="/funds" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-              Portfolio
-            </Link>
-            <Link to="/watchlist" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-              Watchlist
-            </Link>
-            <Link to="/reports" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-              Reports
-            </Link>
-            <Link to="/calculators" className="flex items-center space-x-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+            <Link
+              to="/goals"
+              className="flex items-center space-x-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            >
               <Calculator className="h-4 w-4" />
-              <span>Calculators</span>
+              <span>Goal Planner</span>
             </Link>
+
+            {/* Dropdown for Insights */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-sm font-medium px-2">
+                  Insights
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem asChild>
+                  <Link to="/dashboard" className="flex items-center space-x-2">
+                    <PieChart className="h-4 w-4" />
+                    <span>My Journey</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/funds" className="flex items-center space-x-2">
+                    <FolderKanban className="h-4 w-4" />
+                    <span>Portfolio</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/reports" className="flex items-center space-x-2">
+                    <BarChart3 className="h-4 w-4" />
+                    <span>Reports</span>
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </nav>
 
           {/* Desktop Actions */}
@@ -94,59 +132,72 @@ export const Header = () => {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t">
             <nav className="flex flex-col space-y-4">
-              <Link 
-                to="/services" 
+              <Link
+                to="/services"
                 className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
                 <TrendingUp className="h-4 w-4" />
                 <span>Services</span>
               </Link>
-              <Link 
-                to="/dashboard" 
-                className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <PieChart className="h-4 w-4" />
-                <span>My Journey</span>
-              </Link>
-              <Link 
-                to="/funds" 
-                className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <TrendingUp className="h-4 w-4" />
-                <span>Portfolio</span>
-              </Link>
-              <Link 
-                to="/watchlist" 
-                className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <Target className="h-4 w-4" />
-                <span>Watchlist</span>
-              </Link>
-              <Link 
-                to="/reports" 
-                className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <Target className="h-4 w-4" />
-                <span>Reports</span>
-              </Link>
-              <Link 
-                to="/calculators" 
+              <Link
+                to="/goals"
                 className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
                 <Calculator className="h-4 w-4" />
-                <span>Calculators</span>
+                <span>Goal Planner</span>
               </Link>
+
+              {/* Mobile Insights Accordion */}
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="insights">
+                  <AccordionTrigger className="text-sm font-medium text-muted-foreground hover:text-primary">
+                    Insights
+                  </AccordionTrigger>
+                  <AccordionContent className="pl-4">
+                    <Link
+                      to="/dashboard"
+                      className="flex items-center space-x-2 text-sm text-muted-foreground hover:text-primary mb-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <PieChart className="h-4 w-4" />
+                      <span>My Journey</span>
+                    </Link>
+                    <Link
+                      to="/funds"
+                      className="flex items-center space-x-2 text-sm text-muted-foreground hover:text-primary mb-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <FolderKanban className="h-4 w-4" />
+                      <span>Portfolio</span>
+                    </Link>
+                    <Link
+                      to="/reports"
+                      className="flex items-center space-x-2 text-sm text-muted-foreground hover:text-primary"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      <span>Reports</span>
+                    </Link>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+
+              {/* Mobile Auth */}
               <div className="flex flex-col space-y-2 pt-4 border-t">
                 {user ? (
                   <>
                     <span className="text-sm text-muted-foreground px-2">{user.email}</span>
-                    <Button variant="ghost" size="sm" className="justify-start" onClick={() => { setIsMenuOpen(false); handleLogout(); }}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="justify-start"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        handleLogout();
+                      }}
+                    >
                       Logout
                     </Button>
                   </>

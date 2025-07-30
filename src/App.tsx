@@ -52,11 +52,13 @@ const App = () => (
                 <Dashboard />
               </ProtectedRoute>
             } />
-            <Route path="/funds" element={<Funds />} />
-            <Route path="/watchlist" element={
+            <Route path="/funds" element={
               <ProtectedRoute>
-                <Watchlist />
+                <Funds />
               </ProtectedRoute>
+            } />
+            <Route path="/watchlist" element={
+              <Watchlist />
             } />
             <Route path="/reports" element={
               <ProtectedRoute>
