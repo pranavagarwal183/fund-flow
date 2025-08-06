@@ -27,8 +27,8 @@ export const Footer = () => {
             </Link>
             
             <p className="text-background/80 mb-6 leading-relaxed">
-              India's most trusted AI-powered mutual fund investment platform. 
-              Build wealth systematically with personalized recommendations.
+              India's most trusted expert-guided mutual fund investment platform. 
+              Build wealth systematically with professional portfolio management and personalized service.
             </p>
             
             <div className="flex space-x-4">

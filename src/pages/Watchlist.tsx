@@ -8,7 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Eye, X, Info, Wallet, BarChart, Percent, Calendar, Shield } from "lucide-react";
+import { Search, Eye, X, Info, Wallet, BarChart, Percent, Calendar, Shield, Bookmark, BookmarkPlus } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 // --- Define initialFundNames OUTSIDE the component ---
 // This array is now only created once when the module loads,
@@ -247,11 +250,14 @@ const FundDetailsModal: React.FC<FundDetailsModalProps> = ({ fund, onClose }) =>
 
 // --- Watchlist Component ---
 const Watchlist = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [watchlistFunds, setWatchlistFunds] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selectedFund, setSelectedFund] = useState<any | null>(null);
+  const [bookmarkedFunds, setBookmarkedFunds] = useState<Set<string>>(new Set());
 
   const API_BASE_URL = "https://stock.indianapi.in/mutual_funds_details";
   const API_KEY = import.meta.env.VITE_INDIAN_STOCK_API_KEY;
@@ -392,6 +398,85 @@ const Watchlist = () => {
     );
   };
 
+  const handleBookmarkToggle = async (fundName: string) => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "To create your own watchlist, please log in or sign up.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (bookmarkedFunds.has(fundName)) {
+        // Remove from watchlist
+        const { error } = await supabase
+          .from('watchlists')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('scheme_id', fundName); // Using fundName as identifier for now
+
+        if (!error) {
+          setBookmarkedFunds(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(fundName);
+            return newSet;
+          });
+          toast({
+            title: "Removed from Watchlist",
+            description: "Fund has been removed from your watchlist.",
+          });
+        }
+      } else {
+        // Add to watchlist
+        const { error } = await supabase
+          .from('watchlists')
+          .insert({
+            user_id: user.id,
+            scheme_id: fundName, // Using fundName as identifier for now
+            price_alert_enabled: false
+          });
+
+        if (!error) {
+          setBookmarkedFunds(prev => new Set(prev).add(fundName));
+          toast({
+            title: "Added to Watchlist",
+            description: "Fund has been added to your watchlist.",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error updating watchlist:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update watchlist. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Load user's bookmarked funds on component mount
+  useEffect(() => {
+    if (user) {
+      const loadBookmarks = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('watchlists')
+            .select('scheme_id')
+            .eq('user_id', user.id);
+
+          if (!error && data) {
+            setBookmarkedFunds(new Set(data.map(item => item.scheme_id)));
+          }
+        } catch (error) {
+          console.error('Error loading bookmarks:', error);
+        }
+      };
+      loadBookmarks();
+    }
+  }, [user]);
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
@@ -444,6 +529,7 @@ const Watchlist = () => {
                           <TableHead>1Y Return</TableHead>
                           <TableHead>Expense</TableHead>
                           <TableHead>AUM</TableHead>
+                          <TableHead>Watchlist</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -456,6 +542,20 @@ const Watchlist = () => {
                             <TableCell>{fund.expense_ratio?.current?.toFixed(2) || "N/A"}%</TableCell>
                             <TableCell>
                                 {fund.basic_info?.fund_size ? `₹${(fund.basic_info.fund_size / 10000000).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Cr` : "N/A"}
+                            </TableCell>
+                            <TableCell>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                onClick={() => handleBookmarkToggle(fund.basic_info?.fund_name || "")}
+                                className="p-2"
+                              >
+                                {bookmarkedFunds.has(fund.basic_info?.fund_name || "") ? (
+                                  <Bookmark className="h-4 w-4 text-blue-600 fill-current" />
+                                ) : (
+                                  <BookmarkPlus className="h-4 w-4 text-gray-400" />
+                                )}
+                              </Button>
                             </TableCell>
                             <TableCell className="text-right">
                               <Button size="sm" variant="outline" onClick={() => setSelectedFund(fund)}>

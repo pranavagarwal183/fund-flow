@@ -14,8 +14,8 @@ import { Card, CardContent } from "@/components/ui/card";
 const features = [
   {
     icon: Brain,
-    title: "AI-Powered Recommendations",
-    description: "Get personalized fund suggestions based on advanced machine learning algorithms that analyze market trends and your financial goals."
+    title: "Expert Investment Guidance",
+    description: "Get personalized fund recommendations from our experienced team of financial experts who analyze market trends and align them with your financial goals."
   },
   {
     icon: Target,

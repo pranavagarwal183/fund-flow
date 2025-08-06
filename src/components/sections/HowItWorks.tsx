@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../AuthProvider";
 
 const steps = [
   {
@@ -18,9 +20,9 @@ const steps = [
   },
   {
     icon: Search,
-    title: "Get AI Recommendations",
-    description: "Our advanced algorithms analyze thousands of funds to suggest the perfect portfolio for your needs.",
-    details: ["Personalized fund selection", "Risk-adjusted returns", "Diversification optimization"]
+    title: "Get Expert Recommendations",
+    description: "Our experienced financial advisors analyze thousands of funds to suggest the perfect portfolio for your needs.",
+    details: ["Personalized fund selection", "Risk-adjusted returns", "Expert diversification advice"]
   },
   {
     icon: Target,
@@ -37,6 +39,17 @@ const steps = [
 ];
 
 export const HowItWorks = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleGetStarted = () => {
+    if (user) {
+      navigate("/dashboard");
+    } else {
+      navigate("/signup");
+    }
+  };
+
   return (
     <section className="py-20 bg-background">
       <div className="container mx-auto px-4">
@@ -45,8 +58,8 @@ export const HowItWorks = () => {
             How It Works
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Start your investment journey in just four simple steps. Our intelligent platform 
-            guides you through every stage of your financial growth.
+            Start your investment journey in just four simple steps. Our expert-guided platform 
+            supports you through every stage of your financial growth.
           </p>
         </div>
         
@@ -99,8 +112,8 @@ export const HowItWorks = () => {
         </div>
         
         <div className="text-center mt-12">
-          <Button size="lg" className="bg-gradient-primary">
-            Start Your Investment Journey
+          <Button size="lg" className="bg-gradient-primary" onClick={handleGetStarted}>
+            {user ? "Go to Dashboard" : "Start Your Investment Journey"}
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </div>

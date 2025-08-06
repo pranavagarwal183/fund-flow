@@ -5,6 +5,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
+import GoalDetailsModal from "@/components/GoalDetailsModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,6 +47,8 @@ const GoalPlanner = () => {
   // Consolidated State Management
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("goal");
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [selectedGoalForModal, setSelectedGoalForModal] = useState<GoalCategory | null>(null);
 
   // State for SIP Calculator
   const [sipAmount, setSipAmount] = useState(10000);
@@ -218,6 +221,11 @@ const GoalPlanner = () => {
     calculatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  const handleLearnMore = (goal: GoalCategory) => {
+    setSelectedGoalForModal(goal);
+    setShowGoalModal(true);
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <Header />
@@ -263,6 +271,19 @@ const GoalPlanner = () => {
                     <div className="flex justify-between text-sm mt-1">
                     <span className="text-gray-500">Typical Amount:</span>
                     <span className="font-semibold text-gray-700">{goal.avgAmount}</span>
+                    </div>
+                    <div className="mt-4 pt-3 border-t">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLearnMore(goal);
+                        }}
+                      >
+                        Learn More
+                      </Button>
                     </div>
                 </CardContent>
                 </Card>
@@ -438,6 +459,17 @@ const GoalPlanner = () => {
       </main>
       
       <Footer />
+
+      {/* Goal Details Modal */}
+      {showGoalModal && selectedGoalForModal && (
+        <GoalDetailsModal
+          goal={selectedGoalForModal}
+          onClose={() => {
+            setShowGoalModal(false);
+            setSelectedGoalForModal(null);
+          }}
+        />
+      )}
     </div>
   );
 };

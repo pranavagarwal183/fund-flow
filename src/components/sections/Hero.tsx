@@ -1,7 +1,24 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, TrendingUp, Shield, Calculator } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../AuthProvider";
 
 export const Hero = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleGetStarted = () => {
+    if (user) {
+      navigate("/dashboard");
+    } else {
+      navigate("/signup");
+    }
+  };
+
+  const handleTryCalculators = () => {
+    navigate("/calculators");
+  };
+
   return (
     <section className="relative overflow-hidden bg-gradient-hero py-20 lg:py-32">
       <div className="container mx-auto px-4">
@@ -10,7 +27,7 @@ export const Hero = () => {
           <div className="text-center lg:text-left">
             <div className="inline-flex items-center bg-primary-light/80 backdrop-blur text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
               <TrendingUp className="h-4 w-4 mr-2" />
-              AI-Powered Investment Recommendations
+              Expert-Guided Investment Services
             </div>
             
             <h1 className="text-4xl lg:text-6xl font-bold text-white mb-6 leading-tight">
@@ -21,15 +38,15 @@ export const Hero = () => {
             </h1>
             
             <p className="text-lg lg:text-xl text-white/90 mb-8 max-w-2xl mx-auto lg:mx-0">
-              Get personalized mutual fund recommendations powered by AI, achieve your financial goals with our intelligent portfolio management, and grow your wealth with confidence.
+              We provide expert-guided services that allow you to invest in mutual funds and plan for your financial goals. Our dedicated team actively monitors your portfolio and makes necessary adjustments to keep you on track to achieve your objectives.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12">
-              <Button size="lg" className="bg-white text-primary hover:bg-white/90 shadow-strong">
-                Start Investing Now
+              <Button size="lg" className="bg-white text-primary hover:bg-white/90 shadow-strong" onClick={handleGetStarted}>
+                {user ? "Go to Dashboard" : "Start Investing Now"}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-              <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10">
+              <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10" onClick={handleTryCalculators}>
                 <Calculator className="mr-2 h-5 w-5" />
                 Try Calculators
               </Button>

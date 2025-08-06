@@ -32,10 +32,10 @@ export default function Services() {
         <section className="bg-blue-600 py-20">
           <div className="container mx-auto px-4 text-center">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              AI-Powered Mutual Fund Investing
+              Expert-Guided Mutual Fund Services
             </h1>
             <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
-              We offer end-to-end services, from seamless onboarding to intelligent portfolio management, all designed to help you achieve your financial goals.
+              We provide expert-guided services that allow you to invest in mutual funds and plan for your financial goals. Our dedicated team actively monitors your portfolio and makes necessary adjustments to keep you on track.
             </p>
             <Button
               size="lg"
@@ -75,7 +75,7 @@ export default function Services() {
                     <CardDescription>Start in minutes with our fully digital and paperless setup process.</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Button variant="outline" className="w-full" disabled>Learn More</Button>
+                    <Button variant="outline" className="w-full">Learn More</Button>
                   </CardContent>
                 </Card>
 
@@ -88,54 +88,54 @@ export default function Services() {
                     <CardDescription>Complete your KYC verification online with our secure and compliant system.</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Button variant="outline" className="w-full" disabled>Learn More</Button>
+                    <Button variant="outline" className="w-full">Learn More</Button>
                   </CardContent>
                 </Card>
               </div>
 
               {/* Column 2 */}
               <div className="space-y-6">
-                <h3 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6 text-center">AI-Powered Insights</h3>
+                <h3 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6 text-center">Expert-Guided Planning</h3>
                 <Card className="hover:shadow-xl transition-shadow">
                   <CardHeader>
                     <div className="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-lg w-min mb-2">
-                      <Cpu className="h-6 w-6 text-blue-600" />
+                      <Target className="h-6 w-6 text-blue-600" />
                     </div>
-                    <CardTitle>Personalized Recommendations</CardTitle>
-                    <CardDescription>Our AI analyzes your goals to suggest funds tailored specifically for you.</CardDescription>
+                    <CardTitle>Goal-Based Financial Planning</CardTitle>
+                    <CardDescription>Our financial experts create customized investment strategies aligned with your specific life goals and timeline.</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Button variant="outline" className="w-full" disabled>Learn More</Button>
+                    <Button variant="outline" className="w-full">Learn More</Button>
                   </CardContent>
                 </Card>
 
                 <Card className="hover:shadow-xl transition-shadow">
                   <CardHeader>
                     <div className="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-lg w-min mb-2">
-                      <Target className="h-6 w-6 text-blue-600" />
+                      <Cpu className="h-6 w-6 text-blue-600" />
                     </div>
-                    <CardTitle>Advanced Risk Profiling</CardTitle>
-                    <CardDescription>Understand your risk tolerance with our comprehensive assessment tools.</CardDescription>
+                    <CardTitle>Direct Mutual Fund Platform</CardTitle>
+                    <CardDescription>Access thousands of mutual funds with zero commission. Invest directly and save on fees while building your wealth.</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Button variant="outline" className="w-full" disabled>Learn More</Button>
+                    <Button variant="outline" className="w-full">Learn More</Button>
                   </CardContent>
                 </Card>
               </div>
 
               {/* Column 3 */}
               <div className="space-y-6">
-                <h3 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6 text-center">Effortless Management</h3>
+                <h3 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6 text-center">Expert Portfolio Management</h3>
                 <Card className="hover:shadow-xl transition-shadow">
                   <CardHeader>
                     <div className="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-lg w-min mb-2">
                       <Building2 className="h-6 w-6 text-blue-600" />
                     </div>
-                    <CardTitle>Automated Investing</CardTitle>
-                    <CardDescription>Set up and manage SIPs with ease for disciplined, long-term growth.</CardDescription>
+                    <CardTitle>Portfolio Monitoring & Management</CardTitle>
+                    <CardDescription>Our dedicated team actively monitors your portfolio and makes necessary adjustments to keep you on track.</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Button variant="outline" className="w-full" disabled>Learn More</Button>
+                    <Button variant="outline" className="w-full">Learn More</Button>
                   </CardContent>
                 </Card>
 
@@ -144,11 +144,11 @@ export default function Services() {
                     <div className="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-lg w-min mb-2">
                       <TrendingUp className="h-6 w-6 text-blue-600" />
                     </div>
-                    <CardTitle>Unified Portfolio Tracking</CardTitle>
-                    <CardDescription>Monitor your investments and track performance from a single dashboard.</CardDescription>
+                    <CardTitle>Proactive Rebalancing</CardTitle>
+                    <CardDescription>Regular portfolio reviews and rebalancing to ensure optimal asset allocation and risk management.</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Button variant="outline" className="w-full" disabled>Learn More</Button>
+                    <Button variant="outline" className="w-full">Learn More</Button>
                   </CardContent>
                 </Card>
               </div>
@@ -213,7 +213,7 @@ export default function Services() {
             <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
               Join thousands of investors who trust FundFinder to guide their financial journey.
             </p>
-            <Button size="lg" variant="secondary">
+            <Button size="lg" variant="secondary" onClick={() => window.location.href = '/signup'}>
               Sign Up for Free
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
