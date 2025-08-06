@@ -67,6 +67,13 @@ export const Header = () => {
               <Calculator className="h-4 w-4" />
               <span>Goal Planner</span>
             </Link>
+            <Link
+              to="/watchlist"
+              className="flex items-center space-x-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            >
+              <Calculator className="h-4 w-4" />
+              <span>Watchlist</span>
+            </Link>
 
             {/* Dropdown for Insights */}
             <DropdownMenu>
