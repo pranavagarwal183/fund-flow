@@ -227,16 +227,16 @@ const GoalPlanner = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-background">
       <Header />
       
       <main className="flex-1 container mx-auto px-4 py-12">
         {/* --- 1. Hero Section --- */}
         <section className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-gray-800 mb-4 tracking-tight">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-foreground mb-4 tracking-tight">
             Turn Your Dreams Into Reality
           </h1>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
             Select a goal to get started, or use our advanced calculators to chart your own path to financial success.
           </p>
         </section>
@@ -259,20 +259,20 @@ const GoalPlanner = () => {
                     <goal.icon className="w-full h-full text-white" />
                     </div>
                     <div>
-                    <CardTitle className="text-xl text-gray-800">{goal.title}</CardTitle>
-                    <p className="text-sm text-gray-500">{goal.description}</p>
+                    <CardTitle className="text-xl text-foreground">{goal.title}</CardTitle>
+                    <p className="text-sm text-muted-foreground">{goal.description}</p>
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex justify-between text-sm mt-2 pt-3 border-t">
-                    <span className="text-gray-500">Typical Timeframe:</span>
-                    <span className="font-semibold text-gray-700">{goal.timeframe}</span>
+                    <div className="flex justify-between text-sm mt-2 pt-3 border-t border-border">
+                    <span className="text-muted-foreground">Typical Timeframe:</span>
+                    <span className="font-semibold text-foreground">{goal.timeframe}</span>
                     </div>
                     <div className="flex justify-between text-sm mt-1">
-                    <span className="text-gray-500">Typical Amount:</span>
-                    <span className="font-semibold text-gray-700">{goal.avgAmount}</span>
+                    <span className="text-muted-foreground">Typical Amount:</span>
+                    <span className="font-semibold text-foreground">{goal.avgAmount}</span>
                     </div>
-                    <div className="mt-4 pt-3 border-t">
+                    <div className="mt-4 pt-3 border-t border-border">
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -295,8 +295,8 @@ const GoalPlanner = () => {
         <section ref={calculatorRef} className="scroll-mt-20">
             <Card className="shadow-2xl border-t-4 border-primary">
                 <CardHeader className="text-center">
-                  <CardTitle className="text-3xl font-bold text-gray-800">Financial Planning Suite</CardTitle>
-                  <p className="text-gray-600">Powerful tools to model your financial future.</p>
+                  <CardTitle className="text-3xl font-bold text-foreground">Financial Planning Suite</CardTitle>
+                  <p className="text-muted-foreground">Powerful tools to model your financial future.</p>
                 </CardHeader>
                 <CardContent>
                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -309,8 +309,8 @@ const GoalPlanner = () => {
                       {/* Goal Planner Tab */}
                       <TabsContent value="goal">
                         <div className="grid lg:grid-cols-5 gap-8 items-start">
-                           <div className="lg:col-span-3 space-y-6 p-6 bg-white rounded-lg border">
-                              <h3 className="text-xl font-semibold text-gray-800">Plan for Your Goal</h3>
+                           <div className="lg:col-span-3 space-y-6 p-6 bg-card rounded-lg border border-border">
+                              <h3 className="text-xl font-semibold text-foreground">Plan for Your Goal</h3>
                               <div>
                                 <Label htmlFor="goal-amount">How much do you need for your goal?</Label>
                                 <Input id="goal-amount" type="number" value={goalAmount} onChange={(e) => setGoalAmount(Number(e.target.value))} className="mt-1" placeholder="e.g., 2500000" />
@@ -334,18 +334,18 @@ const GoalPlanner = () => {
                                 </div>
                               </div>
                            </div>
-                           <div className="lg:col-span-2 bg-primary/5 p-6 rounded-lg text-center h-full flex flex-col justify-center border border-primary/20">
-                                <p className="text-lg text-gray-600 mb-2">To reach your goal, you need to invest:</p>
+                           <div className="lg:col-span-2 bg-primary/5 dark:bg-primary/10 p-6 rounded-lg text-center h-full flex flex-col justify-center border border-primary/20">
+                                <p className="text-lg text-muted-foreground mb-2">To reach your goal, you need to invest:</p>
                                 <p className="text-4xl font-bold text-primary mb-4">{formatCurrency(goalResult.requiredSIP)}</p>
-                                <p className="text-gray-600 mb-6">per month</p>
-                                <div className="text-sm space-y-2 text-left bg-white p-4 rounded-md">
+                                <p className="text-muted-foreground mb-6">per month</p>
+                                <div className="text-sm space-y-2 text-left bg-card p-4 rounded-md border border-border">
                                     <div className="flex justify-between">
-                                        <span className="text-gray-500">Today's Goal Cost:</span>
-                                        <span className="font-medium">{formatCurrency(goalAmount)}</span>
+                                        <span className="text-muted-foreground">Today's Goal Cost:</span>
+                                        <span className="font-medium text-foreground">{formatCurrency(goalAmount)}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-gray-500">Future Goal Cost (with inflation):</span>
-                                        <span className="font-medium">{formatCurrency(goalResult.futureCostOfGoal)}</span>
+                                        <span className="text-muted-foreground">Future Goal Cost (with inflation):</span>
+                                        <span className="font-medium text-foreground">{formatCurrency(goalResult.futureCostOfGoal)}</span>
                                     </div>
                                 </div>
                                 <Button size="lg" className="w-full mt-6 bg-gradient-to-r from-primary to-blue-600 text-white shadow-lg">
@@ -358,8 +358,8 @@ const GoalPlanner = () => {
                       {/* SIP Calculator Tab */}
                       <TabsContent value="sip">
                          <div className="grid lg:grid-cols-2 gap-8 items-start">
-                            <div className="space-y-6 p-6 bg-white rounded-lg border">
-                              <h3 className="text-xl font-semibold text-gray-800">SIP Calculator</h3>
+                            <div className="space-y-6 p-6 bg-card rounded-lg border border-border">
+                              <h3 className="text-xl font-semibold text-foreground">SIP Calculator</h3>
                               <div>
                                 <Label>Monthly Investment: {formatCurrency(sipAmount)}</Label>
                                 <Slider value={[sipAmount]} onValueChange={(v) => setSipAmount(v[0])} max={100000} min={500} step={500} className="mt-2"/>
@@ -377,8 +377,8 @@ const GoalPlanner = () => {
                                 <Slider value={[sipStepUp]} onValueChange={(v) => setSipStepUp(v[0])} max={20} min={0} step={1} className="mt-2" />
                               </div>
                             </div>
-                            <div className="space-y-4 p-6 bg-primary/5 rounded-lg border border-primary/20">
-                                <h3 className="text-xl font-semibold text-center text-gray-800">Investment Projection</h3>
+                            <div className="space-y-4 p-6 bg-primary/5 dark:bg-primary/10 rounded-lg border border-primary/20">
+                                <h3 className="text-xl font-semibold text-center text-foreground">Investment Projection</h3>
                                 <div className="h-64">
                                   <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
@@ -390,17 +390,17 @@ const GoalPlanner = () => {
                                   </ResponsiveContainer>
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-gray-600">In {sipYears} years, your total value could be</p>
+                                    <p className="text-muted-foreground">In {sipYears} years, your total value could be</p>
                                     <p className="text-3xl font-bold text-primary">{formatCurrency(sipResult.futureValue)}</p>
                                 </div>
-                                <div className="text-sm space-y-2 pt-4 border-t">
+                                <div className="text-sm space-y-2 pt-4 border-t border-border">
                                     <div className="flex justify-between items-center">
-                                      <span className="flex items-center text-gray-500"><div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>Total Invested:</span>
-                                      <span className="font-medium">{formatCurrency(sipResult.totalInvested)}</span>
+                                      <span className="flex items-center text-muted-foreground"><div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>Total Invested:</span>
+                                      <span className="font-medium text-foreground">{formatCurrency(sipResult.totalInvested)}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                      <span className="flex items-center text-gray-500"><div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>Wealth Gained:</span>
-                                      <span className="font-medium text-green-600">{formatCurrency(sipResult.gains)}</span>
+                                      <span className="flex items-center text-muted-foreground"><div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>Wealth Gained:</span>
+                                      <span className="font-medium text-success">{formatCurrency(sipResult.gains)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -410,8 +410,8 @@ const GoalPlanner = () => {
                       {/* Lumpsum Calculator Tab */}
                       <TabsContent value="lumpsum">
                         <div className="grid lg:grid-cols-2 gap-8 items-start">
-                            <div className="space-y-6 p-6 bg-white rounded-lg border">
-                                <h3 className="text-xl font-semibold text-gray-800">Lumpsum Calculator</h3>
+                            <div className="space-y-6 p-6 bg-card rounded-lg border border-border">
+                                <h3 className="text-xl font-semibold text-foreground">Lumpsum Calculator</h3>
                                 <div>
                                     <Label>One-time Investment: {formatCurrency(lumpAmount)}</Label>
                                     <Slider value={[lumpAmount]} onValueChange={(v) => setLumpAmount(v[0])} max={10000000} min={10000} step={10000} className="mt-2" />
@@ -425,17 +425,17 @@ const GoalPlanner = () => {
                                     <Slider value={[lumpRate]} onValueChange={(v) => setLumpRate(v[0])} max={20} min={5} step={0.5} className="mt-2" />
                                 </div>
                             </div>
-                            <div className="p-6 bg-primary/5 rounded-lg text-center flex flex-col justify-center h-full border border-primary/20">
-                                <p className="text-lg text-gray-600">Your investment could grow to:</p>
+                            <div className="p-6 bg-primary/5 dark:bg-primary/10 rounded-lg text-center flex flex-col justify-center h-full border border-primary/20">
+                                <p className="text-lg text-muted-foreground">Your investment could grow to:</p>
                                 <p className="text-4xl font-bold text-primary my-4">{formatCurrency(calculateLumpsum().futureValue)}</p>
-                                <div className="text-sm space-y-2 text-left bg-white p-4 rounded-md">
+                                <div className="text-sm space-y-2 text-left bg-card p-4 rounded-md border border-border">
                                     <div className="flex justify-between">
-                                        <span className="text-gray-500">Amount Invested:</span>
-                                        <span className="font-medium">{formatCurrency(calculateLumpsum().totalInvested)}</span>
+                                        <span className="text-muted-foreground">Amount Invested:</span>
+                                        <span className="font-medium text-foreground">{formatCurrency(calculateLumpsum().totalInvested)}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-gray-500">Wealth Gained:</span>
-                                        <span className="font-medium text-green-600">{formatCurrency(calculateLumpsum().gains)}</span>
+                                        <span className="text-muted-foreground">Wealth Gained:</span>
+                                        <span className="font-medium text-success">{formatCurrency(calculateLumpsum().gains)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -448,9 +448,9 @@ const GoalPlanner = () => {
 
          {/* --- 4. Disclaimer --- */}
         <section className="mt-16 text-center">
-            <div className="p-6 bg-gray-100 rounded-lg">
-                <h4 className="font-semibold text-gray-800 mb-2">Important Disclaimer</h4>
-                <p className="text-xs text-gray-600 max-w-4xl mx-auto">
+            <div className="p-6 bg-muted/30 dark:bg-muted/20 rounded-lg border border-border">
+                <h4 className="font-semibold text-foreground mb-2">Important Disclaimer</h4>
+                <p className="text-xs text-muted-foreground max-w-4xl mx-auto">
                     All calculations are illustrative and based on the inputs provided. They do not guarantee future returns. Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing. It is advisable to consult with a financial advisor to make informed decisions based on your individual risk profile and financial goals.
                 </p>
             </div>

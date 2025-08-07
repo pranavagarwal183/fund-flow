@@ -81,7 +81,7 @@ export const TrustIndicators = () => {
           {stats.map((stat, index) => (
             <Card key={index} className="text-center border-0 shadow-soft hover:shadow-strong transition-all duration-300">
               <CardContent className="p-8">
-                <div className="bg-primary-light rounded-xl p-4 w-fit mb-4 mx-auto">
+                <div className="bg-primary-light dark:bg-primary/20 rounded-xl p-4 w-fit mb-4 mx-auto">
                   <stat.icon className="h-8 w-8 text-primary" />
                 </div>
                 <div className="text-3xl font-bold text-foreground mb-2">
@@ -99,7 +99,7 @@ export const TrustIndicators = () => {
         </div>
 
         {/* Certifications */}
-        <div className="bg-muted/50 rounded-2xl p-8 mb-20">
+        <div className="bg-muted/50 dark:bg-muted/30 rounded-2xl p-8 mb-20">
           <div className="text-center mb-8">
             <h3 className="text-2xl font-bold text-foreground mb-4">
               Security & Compliance
@@ -111,7 +111,7 @@ export const TrustIndicators = () => {
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {certifications.map((cert, index) => (
-              <div key={index} className="flex items-center space-x-3 bg-background rounded-lg p-4">
+              <div key={index} className="flex items-center space-x-3 bg-background dark:bg-card rounded-lg p-4">
                 <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />
                 <span className="text-sm font-medium text-foreground">{cert}</span>
               </div>
@@ -144,7 +144,7 @@ export const TrustIndicators = () => {
                 </p>
                 
                 <div className="flex items-center">
-                  <div className="bg-primary rounded-full p-3 mr-4">
+                  <div className="bg-primary dark:bg-primary/80 rounded-full p-3 mr-4">
                     <Users className="h-6 w-6 text-primary-foreground" />
                   </div>
                   <div>

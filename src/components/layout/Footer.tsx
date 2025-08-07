@@ -14,7 +14,7 @@ import {
 
 export const Footer = () => {
   return (
-    <footer className="bg-foreground text-background">
+    <footer className="bg-foreground text-background dark:bg-card dark:text-card-foreground">
       <div className="container mx-auto px-4 py-16">
         <div className="grid lg:grid-cols-4 gap-8">
           {/* Brand & Description */}
