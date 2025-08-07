@@ -140,13 +140,10 @@ const Dashboard = () => {
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
+    visible: { 
+      opacity: 1, 
       y: 0,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut"
-      }
+      transition: { duration: 0.5 }
     }
   };
 
@@ -224,8 +221,8 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="shadow-soft card-hover" asChild>
-            <Link to="/funds">
+          <Link to="/funds">
+            <Card className="shadow-soft card-hover">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center">
                   <TrendingUp className="h-5 w-5 mr-2 text-primary" />
@@ -238,11 +235,11 @@ const Dashboard = () => {
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">Click to view funds</p>
               </CardContent>
-            </Link>
-          </Card>
+            </Card>
+          </Link>
 
-          <Card className="shadow-soft card-hover" asChild>
-            <Link to="/reports">
+          <Link to="/reports">
+            <Card className="shadow-soft card-hover">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center">
                   <PieChart className="h-5 w-5 mr-2 text-secondary" />
@@ -266,8 +263,8 @@ const Dashboard = () => {
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">Click for detailed analysis</p>
               </CardContent>
-            </Link>
-          </Card>
+            </Card>
+          </Link>
         </motion.div>
 
         <div className="grid lg:grid-cols-3 gap-8">

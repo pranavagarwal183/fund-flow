@@ -37,7 +37,7 @@ export const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -153,7 +153,7 @@ export const Header = () => {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t">
+          <div className="md:hidden py-4 border-t border-border">
             <nav className="flex flex-col space-y-4">
               <Link
                 to="/services"
@@ -208,7 +208,7 @@ export const Header = () => {
               </Accordion>
 
               {/* Mobile Auth */}
-              <div className="flex flex-col space-y-2 pt-4 border-t">
+              <div className="flex flex-col space-y-2 pt-4 border-t border-border">
                 <div className="flex items-center justify-between px-2">
                   <span className="text-sm text-muted-foreground">Theme</span>
                   <ThemeToggle />

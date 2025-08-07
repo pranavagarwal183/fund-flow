@@ -25,35 +25,35 @@ export const Hero = () => {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Content */}
           <div className="text-center lg:text-left">
-            <div className="inline-flex items-center bg-primary-light/80 backdrop-blur text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
+            <div className="inline-flex items-center bg-primary-light/80 backdrop-blur text-primary px-4 py-2 rounded-full text-sm font-medium mb-6 dark:bg-primary/20 dark:text-primary-foreground">
               <TrendingUp className="h-4 w-4 mr-2" />
               Expert-Guided Investment Services
             </div>
             
             <h1 className="text-4xl lg:text-6xl font-bold text-white mb-6 leading-tight">
               Smart Mutual Fund
-              <span className="block bg-gradient-to-r from-white to-primary-light bg-clip-text text-transparent">
+              <span className="block bg-gradient-to-r from-white to-primary-light bg-clip-text text-transparent dark:from-primary-foreground dark:to-white">
                 Investments Made Simple
               </span>
             </h1>
             
-            <p className="text-lg lg:text-xl text-white/90 mb-8 max-w-2xl mx-auto lg:mx-0">
+            <p className="text-lg lg:text-xl text-white/90 mb-8 max-w-2xl mx-auto lg:mx-0 dark:text-white/80">
               We provide expert-guided services that allow you to invest in mutual funds and plan for your financial goals. Our dedicated team actively monitors your portfolio and makes necessary adjustments to keep you on track to achieve your objectives.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12">
-              <Button size="lg" className="bg-white text-primary hover:bg-white/90 shadow-strong" onClick={handleGetStarted}>
+              <Button size="lg" className="bg-white text-primary hover:bg-white/90 shadow-strong dark:bg-background dark:text-foreground dark:hover:bg-background/90" onClick={handleGetStarted}>
                 {user ? "Go to Dashboard" : "Start Investing Now"}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-              <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10" onClick={handleTryCalculators}>
+              <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 dark:border-white/50 dark:text-white dark:hover:bg-white/20" onClick={handleTryCalculators}>
                 <Calculator className="mr-2 h-5 w-5" />
                 Try Calculators
               </Button>
             </div>
             
             {/* Trust Indicators */}
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 text-white/80">
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 text-white/80 dark:text-white/70">
               <div className="flex items-center">
                 <Shield className="h-5 w-5 mr-2" />
                 <span className="text-sm">SEBI Registered</span>
@@ -70,43 +70,43 @@ export const Hero = () => {
           
           {/* Hero Visual */}
           <div className="relative">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 shadow-strong">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 shadow-strong dark:bg-black/20 dark:shadow-[0_8px_40px_-8px_rgba(0,0,0,0.4)]">
               <div className="space-y-6">
                 {/* Sample Portfolio Card */}
-                <div className="bg-white rounded-xl p-6 shadow-soft">
+                <div className="bg-white rounded-xl p-6 shadow-soft dark:bg-card dark:shadow-[0_2px_20px_-2px_rgba(0,0,0,0.3)]">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-900">Your Portfolio</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-card-foreground">Your Portfolio</h3>
                     <span className="text-success font-bold">+12.5%</span>
                   </div>
                   
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Current Value</span>
-                      <span className="font-bold text-gray-900">₹2,45,750</span>
+                      <span className="text-gray-600 dark:text-muted-foreground">Current Value</span>
+                      <span className="font-bold text-gray-900 dark:text-card-foreground">₹2,45,750</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Total Invested</span>
-                      <span className="font-medium text-gray-900">₹2,18,500</span>
+                      <span className="text-gray-600 dark:text-muted-foreground">Total Invested</span>
+                      <span className="font-medium text-gray-900 dark:text-card-foreground">₹2,18,500</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Gains</span>
+                      <span className="text-gray-600 dark:text-muted-foreground">Gains</span>
                       <span className="font-bold text-success">+₹27,250</span>
                     </div>
                   </div>
                   
-                  <div className="mt-4 pt-4 border-t">
+                  <div className="mt-4 pt-4 border-t border-border">
                     <div className="grid grid-cols-3 gap-4">
                       <div className="text-center">
                         <div className="h-3 bg-primary rounded-full mb-2"></div>
-                        <span className="text-xs text-gray-600">Equity 60%</span>
+                        <span className="text-xs text-gray-600 dark:text-muted-foreground">Equity 60%</span>
                       </div>
                       <div className="text-center">
                         <div className="h-3 bg-secondary rounded-full mb-2"></div>
-                        <span className="text-xs text-gray-600">Debt 30%</span>
+                        <span className="text-xs text-gray-600 dark:text-muted-foreground">Debt 30%</span>
                       </div>
                       <div className="text-center">
                         <div className="h-3 bg-warning rounded-full mb-2"></div>
-                        <span className="text-xs text-gray-600">Gold 10%</span>
+                        <span className="text-xs text-gray-600 dark:text-muted-foreground">Gold 10%</span>
                       </div>
                     </div>
                   </div>
