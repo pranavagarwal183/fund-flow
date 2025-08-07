@@ -434,6 +434,25 @@ CREATE INDEX idx_dividends_payment_date ON public.dividend_history(payment_date 
 CREATE INDEX idx_capital_gains_user_id ON public.capital_gains(user_id);
 CREATE INDEX idx_capital_gains_sale_date ON public.capital_gains(sale_date DESC);
 
+-- Additional performance indexes for enhanced queries
+CREATE INDEX idx_schemes_name_search ON public.mutual_fund_schemes USING gin(to_tsvector('english', scheme_name));
+CREATE INDEX idx_schemes_amc_search ON public.mutual_fund_schemes USING gin(to_tsvector('english', amc_name));
+CREATE INDEX idx_transactions_user_date ON public.transactions(user_id, transaction_date DESC);
+CREATE INDEX idx_transactions_user_scheme ON public.transactions(user_id, scheme_id);
+CREATE INDEX idx_portfolios_user_scheme ON public.portfolios(user_id, scheme_id);
+CREATE INDEX idx_nav_history_scheme_nav ON public.nav_history(scheme_id, nav_value DESC);
+CREATE INDEX idx_schemes_performance ON public.mutual_fund_schemes(return_1year DESC, return_3year DESC, return_5year DESC);
+CREATE INDEX idx_schemes_risk_category ON public.mutual_fund_schemes(risk_level, fund_category);
+CREATE INDEX idx_goals_user_target_date ON public.investment_goals(user_id, target_date);
+CREATE INDEX idx_goals_user_type ON public.investment_goals(user_id, goal_type);
+CREATE INDEX idx_watchlists_user_alert ON public.watchlists(user_id, price_alert_enabled);
+CREATE INDEX idx_sips_user_status_date ON public.sips(user_id, status, sip_date);
+
+-- Composite indexes for complex queries
+CREATE INDEX idx_portfolio_performance ON public.portfolios(user_id, is_active) INCLUDE (total_invested_amount, current_value);
+CREATE INDEX idx_transaction_summary ON public.transactions(user_id, transaction_date) INCLUDE (amount, transaction_type, status);
+CREATE INDEX idx_scheme_performance_summary ON public.mutual_fund_schemes(is_active, fund_category) INCLUDE (current_nav, return_1year, return_3year);
+
 -- Ensure only one active risk assessment per user
 CREATE UNIQUE INDEX idx_risk_assessment_user_active ON public.risk_assessments(user_id) WHERE is_active = TRUE;
 

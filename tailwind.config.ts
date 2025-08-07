@@ -83,7 +83,8 @@ export default {
 			},
 			boxShadow: {
 				'soft': 'var(--shadow-soft)',
-				'strong': 'var(--shadow-strong)'
+				'strong': 'var(--shadow-strong)',
+				'hover': 'var(--shadow-hover)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

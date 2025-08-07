@@ -16,6 +16,8 @@ import MutualFunds from "./pages/MutualFunds";
 import RiskDisclaimer from "./pages/RiskDisclaimer";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
+import PortfolioAnalysis from "./pages/PortfolioAnalysis";
+import Learn from "./pages/Learn";
 
 // Import AuthProvider and ProtectedRoute
 import { AuthProvider } from "./components/AuthProvider";
@@ -68,6 +70,12 @@ const App = () => (
             <Route path="/goals" element={<Goals />} />
             <Route path="/calculators" element={<Calculators />} />
             <Route path="/mutual-funds" element={<MutualFunds />} />
+            <Route path="/portfolio-analysis" element={
+              <ProtectedRoute>
+                <PortfolioAnalysis />
+              </ProtectedRoute>
+            } />
+            <Route path="/learn" element={<Learn />} />
             <Route path="/risk-disclaimer" element={<RiskDisclaimer />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/login" element={<Login />} />

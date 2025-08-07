@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Eye, X, Info, Wallet, BarChart, Percent, Calendar, Shield, Bookmark, BookmarkPlus } from "lucide-react";
+import { Search, Eye, X, Info, Wallet, BarChart, Percent, Calendar, Shield, Bookmark, BookmarkPlus, Loader2 } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +23,34 @@ const INITIAL_FUND_NAMES = [
   "Parag Parikh Flexi Cap Fund Direct Growth",
   "SBI Equity Hybrid Fund Direct Growth"
 ];
+
+// --- Fund interface for local data structure ---
+interface LocalFund {
+  id: string;
+  scheme_code: string;
+  scheme_name: string;
+  amc_name: string;
+  fund_category: string;
+  fund_subcategory: string;
+  risk_level: string;
+  current_nav: number;
+  minimum_sip_amount: number;
+  minimum_lumpsum_amount: number;
+  expense_ratio: number;
+  aum: number;
+  return_1day: number;
+  return_1week: number;
+  return_1month: number;
+  return_3month: number;
+  return_6month: number;
+  return_1year: number;
+  return_3year: number;
+  return_5year: number;
+  fund_manager_name: string;
+  fund_manager_experience: number;
+  is_active: boolean;
+  launch_date: string;
+}
 
 // --- FundDetailsModal Component ---
 interface FundDetailsModalProps {
@@ -253,138 +281,109 @@ const Watchlist = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [watchlistFunds, setWatchlistFunds] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [allFunds, setAllFunds] = useState<LocalFund[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedFund, setSelectedFund] = useState<any | null>(null);
   const [bookmarkedFunds, setBookmarkedFunds] = useState<Set<string>>(new Set());
 
-  const API_BASE_URL = "https://stock.indianapi.in/mutual_funds_details";
-  const API_KEY = import.meta.env.VITE_INDIAN_STOCK_API_KEY;
+  // 🔄 Fetch all funds from Supabase on component mount
+  useEffect(() => {
+    const fetchAllFunds = async () => {
+      try {
+        setInitialLoading(true);
+        setError("");
 
-  // fetchFunds is memoized with useCallback.
-  // It only re-creates if API_KEY changes.
-  // INITIAL_FUND_NAMES is now outside, so its reference is stable.
-  const fetchFunds = useCallback(async (query?: string, initialLoad: boolean = false) => {
-    // Check if API_KEY is available and valid
-    if (!API_KEY || API_KEY === "YOUR_ACTUAL_API_KEY_HERE" || API_KEY.trim() === "") {
-        console.warn("API Key is missing or invalid. Please check your .env file.");
-        setError("API Key is not configured. Please set VITE_INDIAN_STOCK_API_KEY in your .env file.");
-        setLoading(false);
-        setWatchlistFunds([]);
-        return;
-    }
+        console.log("Fetching all funds from Supabase...");
+        const { data, error: supabaseError } = await supabase
+          .from('mutual_fund_schemes')
+          .select('*')
+          .eq('is_active', true)
+          .order('scheme_name');
 
-    setLoading(true);
-    setError(""); // Clear previous errors at the start of fetch
-
-    try {
-      let fundsToFetch: string[] = [];
-      if (initialLoad && INITIAL_FUND_NAMES.length > 0) {
-        fundsToFetch = INITIAL_FUND_NAMES;
-      } else if (query && query.trim() !== "") {
-        fundsToFetch = [query.trim()]; // Search for single fund
-      } else {
-        // If not initial load and query is empty, clear funds and stop loading
-        setWatchlistFunds([]);
-        setLoading(false);
-        return;
-      }
-
-      const fetchedFunds: any[] = [];
-      for (const fundName of fundsToFetch) {
-        try {
-          // Introduce a delay if fetching multiple funds to avoid rate limits
-          if (fundsToFetch.length > 1) {
-              await new Promise(resolve => setTimeout(resolve, 500)); // Wait for 0.5 seconds
-          }
-
-          console.log(`Attempting to fetch: ${fundName}`);
-          const response = await axios.get(API_BASE_URL, {
-            headers: {
-              "x-api-key": API_KEY,
-            },
-            params: {
-              stock_name: fundName
-            },
-          });
-
-          const data = response.data;
-          console.log(`Response for ${fundName}:`, data);
-          if (data && data.basic_info && data.basic_info.fund_name) {
-            fetchedFunds.push(data);
-          } else {
-            console.warn(`No valid data structure found for fund: ${fundName}`, data);
-          }
-        } catch (innerErr: any) {
-          console.warn(`Error fetching details for ${fundName}:`, innerErr.response?.data || innerErr.message);
-          // If a 429 (Too Many Requests) is received, stop trying to fetch more funds
-          if (axios.isAxiosError(innerErr) && innerErr.response?.status === 429) {
-              setError("Rate limit exceeded. Please wait a moment and refresh, or try fewer initial funds.");
-              setWatchlistFunds([]); // Clear existing funds if rate limited
-              setLoading(false); // Ensure loading is off
-              return; // Exit the fetchFunds function immediately
-          }
+        if (supabaseError) {
+          console.error("Supabase error:", supabaseError);
+          setError("Failed to load fund database. Please try again later.");
+          return;
         }
-      }
 
-      if (fetchedFunds.length > 0) {
-        setWatchlistFunds(fetchedFunds);
-        setError(""); // Clear error if funds were successfully fetched
-      } else if (initialLoad && INITIAL_FUND_NAMES.length > 0) {
-        setError("Could not fetch any of the specified initial funds. Please check their names, your API key, or try again later due to rate limits.");
-        setWatchlistFunds([]);
-      } else if (query && query.trim() !== "") {
-        setError(`No fund found for "${query}". Please check the name and try again.`);
-        setWatchlistFunds([]);
-      }
-
-    } catch (err: any) {
-      console.error("API error fetching funds (overall catch):", err);
-      if (axios.isAxiosError(err)) {
-        if (err.response) {
-          if (err.response.status === 401 || err.response.status === 403) {
-            setError("Authentication error: Invalid or missing API key. Please check your .env file.");
-          } else if (err.response.status === 429) { // Redundant but good to have here too
-            setError("Rate limit exceeded for initial load. Please try again in a few minutes.");
-          } else {
-            setError(`Server error: ${err.response.status} - ${err.response.data?.message || err.message}`);
-          }
-        } else if (err.request) {
-          setError("Network error: No response from server. Please check your internet connection.");
+        if (data && data.length > 0) {
+          console.log(`Successfully loaded ${data.length} funds from database`);
+          setAllFunds(data);
         } else {
-          setError(`Request error: ${err.message}`);
+          console.log("No funds found in database");
+          setError("No funds available in the database.");
         }
-      } else {
-        setError("An unexpected error occurred while fetching data.");
+      } catch (err: any) {
+        console.error("Error fetching funds:", err);
+        setError("Failed to load fund database. Please check your connection and try again.");
+      } finally {
+        setInitialLoading(false);
+        setLoading(false);
       }
-      setWatchlistFunds([]); // Clear funds on overall error
-    } finally {
-      setLoading(false);
+    };
+
+    fetchAllFunds();
+  }, []);
+
+  // 🔍 Local search filtering - instant and smooth
+  const filteredFunds = useMemo(() => {
+    if (!searchTerm.trim()) {
+      // If no search term, show initial funds (first 20 for performance)
+      return allFunds.slice(0, 20);
     }
-  }, [API_KEY]); // Dependency: API_KEY. INITIAL_FUND_NAMES is not a dependency as it's outside.
 
-  // Initial fetch for watchlist funds
-  useEffect(() => {
-    console.log("Initial fetch useEffect triggered.");
-    fetchFunds(undefined, true);
-  }, [fetchFunds]); // fetchFunds is a stable reference due to useCallback
+    const searchLower = searchTerm.toLowerCase();
+    return allFunds.filter(fund => 
+      fund.scheme_name.toLowerCase().includes(searchLower) ||
+      fund.amc_name.toLowerCase().includes(searchLower) ||
+      fund.fund_category.toLowerCase().includes(searchLower)
+    ).slice(0, 50); // Limit results for performance
+  }, [allFunds, searchTerm]);
 
-  // Debounced search effect
-  useEffect(() => {
-    console.log("Debounced search useEffect triggered. searchTerm:", searchTerm);
-    if (searchTerm.trim().length > 0) {
-      const delayDebounce = setTimeout(() => {
-        fetchFunds(searchTerm, false);
-      }, 500);
-
-      return () => clearTimeout(delayDebounce); // Cleanup function for debounce
-    } else {
-      // When search term is cleared, revert to initial list
-      console.log("Search term cleared, re-fetching initial funds.");
-      fetchFunds(undefined, true);
-    }
-  }, [searchTerm, fetchFunds]); // searchTerm and stable fetchFunds are dependencies
+  // 📊 Convert local fund data to display format
+  const displayFunds = useMemo(() => {
+    return filteredFunds.map(fund => ({
+      basic_info: {
+        fund_name: fund.scheme_name,
+        category: fund.fund_category,
+        fund_manager: fund.fund_manager_name,
+        inception_date: fund.launch_date,
+        benchmark: "N/A", // Not available in local data
+        risk_level: fund.risk_level,
+        fund_size: fund.aum * 10000000 // Convert to match API format
+      },
+      nav_info: {
+        current_nav: fund.current_nav
+      },
+      returns: {
+        absolute: {
+          "1y": fund.return_1year
+        },
+        cagr: {
+          "3y": fund.return_3year,
+          "5y": fund.return_5year
+        }
+      },
+      expense_ratio: {
+        current: fund.expense_ratio
+      },
+      investment_info: {
+        minimum_sip: fund.minimum_sip_amount,
+        minimum_lumpsum: fund.minimum_lumpsum_amount,
+        stamp_duty: "N/A"
+      },
+      fund_house: {
+        name: fund.amc_name
+      },
+      exit_load: [],
+      holdings: [],
+      additional_info: {
+        description: `${fund.scheme_name} is a ${fund.fund_category} fund managed by ${fund.amc_name}.`
+      }
+    }));
+  }, [filteredFunds]);
 
   const formatChange = (change: number | null | undefined) => {
     if (change === null || change === undefined) {
@@ -488,13 +487,25 @@ const Watchlist = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Search funds by name..."
+                placeholder="Search funds by name, AMC, or category..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
+                disabled={initialLoading}
               />
+              {initialLoading && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              )}
             </div>
           </div>
+          {initialLoading && (
+            <div className="text-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Loading fund database...</p>
+            </div>
+          )}
         </div>
 
         <Tabs defaultValue="watchlist" className="space-y-6">
@@ -506,20 +517,22 @@ const Watchlist = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>Watchlist Funds</span>
-                  <Badge variant="secondary">{watchlistFunds.length} funds</Badge>
+                  <span>Fund Search</span>
+                  <Badge variant="secondary">{displayFunds.length} funds</Badge>
                 </CardTitle>
                 <CardDescription>
-                  Monitor performance and track NAV changes
+                  {searchTerm.trim() ? `Search results for "${searchTerm}"` : "Browse and search mutual funds from the database"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {loading && <p className="text-sm text-muted-foreground text-center py-4">Loading funds...</p>}
+                {initialLoading && <p className="text-sm text-muted-foreground text-center py-4">Loading fund database...</p>}
                 {error && <p className="text-destructive text-sm text-center py-4">{error}</p>}
-                {!loading && watchlistFunds.length === 0 && !error && (
-                    <p className="text-center text-muted-foreground py-4">No funds in your watchlist or search results.</p>
+                {!initialLoading && displayFunds.length === 0 && !error && (
+                    <p className="text-center text-muted-foreground py-4">
+                      {searchTerm.trim() ? `No funds found matching "${searchTerm}"` : "No funds available in the database."}
+                    </p>
                 )}
-                {!loading && watchlistFunds.length > 0 && (
+                {!initialLoading && displayFunds.length > 0 && (
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
@@ -534,7 +547,7 @@ const Watchlist = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {watchlistFunds.map((fund: any, i) => (
+                        {displayFunds.map((fund: any, i) => (
                           <TableRow key={fund.basic_info?.fund_name || i}>
                             <TableCell className="font-medium">{fund.basic_info?.fund_name || "N/A"}</TableCell>
                             <TableCell>₹{fund.nav_info?.current_nav?.toFixed(2) || "N/A"}</TableCell>

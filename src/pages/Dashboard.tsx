@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { 
   TrendingUp, 
   ArrowUpRight, 
@@ -10,11 +12,17 @@ import {
   PieChart,
   Target,
   Calendar,
-  Bell
+  Bell,
+  BarChart3,
+  DollarSign,
+  TrendingDown,
+  Users,
+  Shield
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 
@@ -89,21 +97,24 @@ const Dashboard = () => {
       target: 600000,
       current: 245000,
       progress: 40.83,
-      timeLeft: "8 months"
+      timeLeft: "8 months",
+      icon: Shield
     },
     {
       name: "House Down Payment",
       target: 1500000,
       current: 380000,
       progress: 25.33,
-      timeLeft: "3 years"
+      timeLeft: "3 years",
+      icon: Target
     },
     {
       name: "Child Education",
       target: 2500000,
       current: 125000,
       progress: 5.0,
-      timeLeft: "12 years"
+      timeLeft: "12 years",
+      icon: Users
     }
   ];
 
@@ -117,13 +128,43 @@ const Dashboard = () => {
     }).format(amount);
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut"
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
       
-      <main className="flex-1 container mx-auto px-4 py-8">
+      <motion.main 
+        className="flex-1 container mx-auto px-4 py-8"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
         {/* Welcome Section */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
+        <motion.div 
+          className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8"
+          variants={itemVariants}
+        >
           <div>
             <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">
               Welcome back, Rahul! 👋
@@ -134,26 +175,35 @@ const Dashboard = () => {
           </div>
           
           <div className="flex items-center space-x-3 mt-4 lg:mt-0">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="micro-press">
               <RefreshCw className="h-4 w-4 mr-2" />
               Sync
             </Button>
-            <Button size="sm" className="bg-gradient-primary">
-              <Plus className="h-4 w-4 mr-2" />
-              New Investment
+            <Button size="sm" className="bg-gradient-primary micro-press" asChild>
+              <Link to="/funds">
+                <Plus className="h-4 w-4 mr-2" />
+                New Investment
+              </Link>
             </Button>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Portfolio Overview */}
-        <div className="grid lg:grid-cols-4 gap-6 mb-8">
-          <Card className="lg:col-span-2 shadow-soft">
+        {/* Portfolio Overview Cards */}
+        <motion.div 
+          className="grid lg:grid-cols-4 gap-6 mb-8"
+          variants={itemVariants}
+        >
+          <Card className="lg:col-span-2 shadow-soft card-hover">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">Portfolio Value</CardTitle>
+              <CardTitle className="text-lg flex items-center">
+                <DollarSign className="h-5 w-5 mr-2 text-primary" />
+                Portfolio Value
+              </CardTitle>
               <Button 
                 variant="ghost" 
                 size="sm"
                 onClick={() => setShowBalance(!showBalance)}
+                className="micro-press"
               >
                 {showBalance ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
               </Button>
@@ -174,57 +224,74 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="shadow-soft">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center">
-                <TrendingUp className="h-5 w-5 mr-2 text-primary" />
-                Total Invested
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">
-                {formatCurrency(portfolioData.totalInvested)}
-              </div>
-            </CardContent>
+          <Card className="shadow-soft card-hover" asChild>
+            <Link to="/funds">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center">
+                  <TrendingUp className="h-5 w-5 mr-2 text-primary" />
+                  Total Invested
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-foreground">
+                  {formatCurrency(portfolioData.totalInvested)}
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">Click to view funds</p>
+              </CardContent>
+            </Link>
           </Card>
 
-          <Card className="shadow-soft">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center">
-                <PieChart className="h-5 w-5 mr-2 text-secondary" />
-                Asset Allocation
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Equity</span>
-                  <span className="font-medium">75%</span>
+          <Card className="shadow-soft card-hover" asChild>
+            <Link to="/reports">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center">
+                  <PieChart className="h-5 w-5 mr-2 text-secondary" />
+                  Asset Allocation
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Equity</span>
+                    <span className="font-medium">75%</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Debt</span>
+                    <span className="font-medium">20%</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Others</span>
+                    <span className="font-medium">5%</span>
+                  </div>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span>Debt</span>
-                  <span className="font-medium">20%</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Others</span>
-                  <span className="font-medium">5%</span>
-                </div>
-              </div>
-            </CardContent>
+                <p className="text-sm text-muted-foreground mt-2">Click for detailed analysis</p>
+              </CardContent>
+            </Link>
           </Card>
-        </div>
+        </motion.div>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Holdings */}
-          <div className="lg:col-span-2">
+          <motion.div 
+            className="lg:col-span-2"
+            variants={itemVariants}
+          >
             <Card className="shadow-soft">
               <CardHeader>
-                <CardTitle className="text-xl">My Holdings</CardTitle>
+                <CardTitle className="text-xl flex items-center">
+                  <BarChart3 className="h-6 w-6 mr-2 text-primary" />
+                  My Holdings
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {holdings.map((holding, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <motion.div 
+                      key={index} 
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-all duration-200 card-hover"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
                           <h3 className="font-semibold text-foreground">{holding.name}</h3>
@@ -253,15 +320,18 @@ const Dashboard = () => {
                           </span>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               </CardContent>
             </Card>
-          </div>
+          </motion.div>
 
           {/* Goals & Actions */}
-          <div className="space-y-6">
+          <motion.div 
+            className="space-y-6"
+            variants={itemVariants}
+          >
             {/* Goals */}
             <Card className="shadow-soft">
               <CardHeader>
@@ -272,28 +342,33 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {goals.map((goal, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium text-foreground text-sm">{goal.name}</span>
-                        <span className="text-xs text-muted-foreground">{goal.progress}%</span>
-                      </div>
-                      <div className="w-full bg-muted rounded-full h-2">
-                        <div 
-                          className="bg-primary h-2 rounded-full transition-all duration-300" 
-                          style={{ width: `${goal.progress}%` }}
-                        ></div>
-                      </div>
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>{formatCurrency(goal.current)} / {formatCurrency(goal.target)}</span>
-                        <span>{goal.timeLeft}</span>
-                      </div>
-                    </div>
-                  ))}
+                  {goals.map((goal, index) => {
+                    const IconComponent = goal.icon;
+                    return (
+                      <motion.div 
+                        key={index} 
+                        className="space-y-2 p-3 rounded-lg hover:bg-muted/30 transition-colors"
+                        whileHover={{ scale: 1.02 }}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <IconComponent className="h-4 w-4 text-primary" />
+                          <span className="font-medium text-foreground text-sm">{goal.name}</span>
+                          <span className="text-xs text-muted-foreground ml-auto">{goal.progress}%</span>
+                        </div>
+                        <Progress value={goal.progress} className="progress-animate" />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>{formatCurrency(goal.current)} / {formatCurrency(goal.target)}</span>
+                          <span>{goal.timeLeft}</span>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
                 </div>
-                <Button variant="outline" className="w-full mt-4" size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add New Goal
+                <Button variant="outline" className="w-full mt-4 micro-press" size="sm" asChild>
+                  <Link to="/goals">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add New Goal
+                  </Link>
                 </Button>
               </CardContent>
             </Card>
@@ -304,27 +379,31 @@ const Dashboard = () => {
                 <CardTitle className="text-lg">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button className="w-full justify-start" variant="outline">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Start New SIP
+                <Button className="w-full justify-start micro-press" variant="outline" asChild>
+                  <Link to="/funds">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Start New SIP
+                  </Link>
                 </Button>
-                <Button className="w-full justify-start" variant="outline">
-                  <TrendingUp className="h-4 w-4 mr-2" />
-                  One-time Investment
+                <Button className="w-full justify-start micro-press" variant="outline" asChild>
+                  <Link to="/funds">
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    One-time Investment
+                  </Link>
                 </Button>
-                <Button className="w-full justify-start" variant="outline">
+                <Button className="w-full justify-start micro-press" variant="outline">
                   <Calendar className="h-4 w-4 mr-2" />
                   Schedule Meeting
                 </Button>
-                <Button className="w-full justify-start" variant="outline">
+                <Button className="w-full justify-start micro-press" variant="outline">
                   <Bell className="h-4 w-4 mr-2" />
                   Set Alerts
                 </Button>
               </CardContent>
             </Card>
-          </div>
+          </motion.div>
         </div>
-      </main>
+      </motion.main>
       
       <Footer />
     </div>

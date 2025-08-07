@@ -114,7 +114,7 @@ export default function Services() {
                     <div className="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-lg w-min mb-2">
                       <Cpu className="h-6 w-6 text-blue-600" />
                     </div>
-                    <CardTitle>Direct Mutual Fund Platform</CardTitle>
+                    <CardTitle>360° Mutual Fund Platform</CardTitle>
                     <CardDescription>Access thousands of mutual funds with zero commission. Invest directly and save on fees while building your wealth.</CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -125,7 +125,7 @@ export default function Services() {
 
               {/* Column 3 */}
               <div className="space-y-6">
-                <h3 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6 text-center">Expert Portfolio Management</h3>
+                <h3 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6 text-center">Regular Portfolio Management</h3>
                 <Card className="hover:shadow-xl transition-shadow">
                   <CardHeader>
                     <div className="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-lg w-min mb-2">

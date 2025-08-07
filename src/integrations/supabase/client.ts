@@ -5,13 +5,103 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://zrozbgygozyzziuzwlap.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpyb3piZ3lnb3p5enppdXp3bGFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2MDcxNjUsImV4cCI6MjA2ODE4MzE2NX0.VelieE7sVUh2IXOjfuJ7Dt0XZrIKTGlIkltV_wfyQeo";
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
-
+// Enhanced Supabase client with better configuration
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  }
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'fund-flow-app',
+    },
+  },
+  db: {
+    schema: 'public',
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
 });
+
+// Cache configuration for better performance
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const cache = new Map<string, { data: any; timestamp: number }>();
+
+// Enhanced query function with caching
+export const cachedQuery = async <T>(
+  key: string,
+  queryFn: () => Promise<T>,
+  duration: number = CACHE_DURATION
+): Promise<T> => {
+  const cached = cache.get(key);
+  const now = Date.now();
+
+  if (cached && (now - cached.timestamp) < duration) {
+    return cached.data;
+  }
+
+  try {
+    const data = await queryFn();
+    cache.set(key, { data, timestamp: now });
+    return data;
+  } catch (error) {
+    // If query fails, return cached data if available (even if expired)
+    if (cached) {
+      console.warn('Query failed, using cached data:', error);
+      return cached.data;
+    }
+    throw error;
+  }
+};
+
+// Clear cache function
+export const clearCache = (pattern?: string) => {
+  if (pattern) {
+    for (const key of cache.keys()) {
+      if (key.includes(pattern)) {
+        cache.delete(key);
+      }
+    }
+  } else {
+    cache.clear();
+  }
+};
+
+// Security helper functions
+export const validateUserAccess = async (userId: string, resourceUserId: string) => {
+  if (userId !== resourceUserId) {
+    throw new Error('Unauthorized access to resource');
+  }
+  return true;
+};
+
+// Rate limiting helper
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 100; // max requests per window
+
+export const checkRateLimit = (identifier: string): boolean => {
+  const now = Date.now();
+  const rateLimit = rateLimitMap.get(identifier);
+
+  if (!rateLimit || now > rateLimit.resetTime) {
+    rateLimitMap.set(identifier, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+
+  if (rateLimit.count >= RATE_LIMIT_MAX) {
+    return false;
+  }
+
+  rateLimit.count++;
+  return true;
+};
+
+// Import the supabase client like this:
+// import { supabase } from "@/integrations/supabase/client";

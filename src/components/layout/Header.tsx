@@ -17,10 +17,12 @@ import {
   User,
   BarChart3,
   FolderKanban,
+  BookOpen,
 } from "lucide-react";
 import { useAuth } from "../AuthProvider"; // Adjust path as needed
 import { supabase } from "@/integrations/supabase/client";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -74,6 +76,13 @@ export const Header = () => {
               <Calculator className="h-4 w-4" />
               <span>Watchlist</span>
             </Link>
+            <Link
+              to="/learn"
+              className="flex items-center space-x-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            >
+              <BookOpen className="h-4 w-4" />
+              <span>Learn</span>
+            </Link>
 
             {/* Dropdown for Insights */}
             <DropdownMenu>
@@ -101,12 +110,19 @@ export const Header = () => {
                     <span>Reports</span>
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/portfolio-analysis" className="flex items-center space-x-2">
+                    <PieChart className="h-4 w-4" />
+                    <span>Portfolio Analysis</span>
+                  </Link>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </nav>
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-3">
+            <ThemeToggle />
             {user ? (
               <>
                 <span className="text-sm text-muted-foreground">{user.email}</span>
@@ -193,6 +209,10 @@ export const Header = () => {
 
               {/* Mobile Auth */}
               <div className="flex flex-col space-y-2 pt-4 border-t">
+                <div className="flex items-center justify-between px-2">
+                  <span className="text-sm text-muted-foreground">Theme</span>
+                  <ThemeToggle />
+                </div>
                 {user ? (
                   <>
                     <span className="text-sm text-muted-foreground px-2">{user.email}</span>
