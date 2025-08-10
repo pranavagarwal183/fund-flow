@@ -28,9 +28,13 @@ export default function Signup() {
     setError("");
     setLoading(true);
     // 1. Create user in Supabase Auth
+    const redirectUrl = `${window.location.origin}/`;
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
+      options: {
+        emailRedirectTo: redirectUrl,
+      },
     });
     if (signUpError) {
       setError(signUpError.message);
@@ -38,32 +42,9 @@ export default function Signup() {
       return;
     }
 
-    // 2. Insert into user_profiles
-    const userObj = data.user;
-    if (!userObj) {
-      setError("Signup failed. Please try again.");
-      setLoading(false);
-      return;
-    }
-
-    const { error: profileError } = await supabase
-      .from("user_profiles")
-      .insert([
-        {
-          id: userObj.id,
-          email: form.email,
-          full_name: form.full_name,
-          phone: form.phone,
-          date_of_birth: form.date_of_birth,
-          gender: form.gender,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      ]);
+    // Profile will be created after the user logs in.
     setLoading(false);
-    if (profileError) return setError(profileError.message);
-
-    navigate("/dashboard");
+    navigate("/login");
   }
 
   return (
