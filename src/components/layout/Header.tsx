@@ -23,6 +23,8 @@ import { useAuth } from "../AuthProvider"; // Adjust path as needed
 import { supabase } from "@/integrations/supabase/client";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import AvatarCircle from "@/components/AvatarCircle";
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -35,6 +37,12 @@ export const Header = () => {
     await supabase.auth.signOut();
     navigate("/login");
   };
+
+  const fullName = ((user?.user_metadata?.full_name as string) ||
+    [user?.user_metadata?.first_name, user?.user_metadata?.last_name]
+      .filter(Boolean)
+      .join(" ")) as string;
+  const profileKey = ((user?.id as string) || (user?.email as string) || "") as string;
 
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
@@ -126,6 +134,32 @@ export const Header = () => {
             {user ? (
               <>
                 <span className="text-sm text-muted-foreground">{user.email}</span>
+                <DropdownMenu>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          aria-label={`Open profile menu for ${fullName || user.email}`}
+                          className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        >
+                          <AvatarCircle
+                            name={fullName}
+                            email={user.email}
+                            colorKey={profileKey}
+                          />
+                        </button>
+                      </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                  <TooltipContent>
+                    {fullName || user.email}
+                  </TooltipContent>
+                  </Tooltip>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link to="/dashboard">Profile</Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button variant="ghost" size="sm" onClick={handleLogout}>
                   Logout
                 </Button>
