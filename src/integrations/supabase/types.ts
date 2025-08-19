@@ -7,10 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "12.2.12 (cd3cf9e)"
   }
   public: {
     Tables: {
@@ -211,6 +211,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      kyc_audit_log: {
+        Row: {
+          accessed_at: string | null
+          action: string
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          table_name: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          accessed_at?: string | null
+          action: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          table_name?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          accessed_at?: string | null
+          action?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          table_name?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       kyc_details: {
         Row: {
@@ -781,29 +814,146 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      kyc_details_masked: {
+        Row: {
+          aadhaar_number_masked: string | null
+          aadhaar_verified: boolean | null
+          address_line1: string | null
+          address_line2: string | null
+          bank_account_number_masked: string | null
+          bank_ifsc_code: string | null
+          bank_name: string | null
+          bank_verified: boolean | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          id: string | null
+          pan_number_masked: string | null
+          pan_verified: boolean | null
+          pincode: string | null
+          state: string | null
+          updated_at: string | null
+          user_id: string | null
+          verification_status: string | null
+        }
+        Insert: {
+          aadhaar_number_masked?: never
+          aadhaar_verified?: boolean | null
+          address_line1?: string | null
+          address_line2?: string | null
+          bank_account_number_masked?: never
+          bank_ifsc_code?: string | null
+          bank_name?: string | null
+          bank_verified?: boolean | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string | null
+          pan_number_masked?: never
+          pan_verified?: boolean | null
+          pincode?: string | null
+          state?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          verification_status?: string | null
+        }
+        Update: {
+          aadhaar_number_masked?: never
+          aadhaar_verified?: boolean | null
+          address_line1?: string | null
+          address_line2?: string | null
+          bank_account_number_masked?: never
+          bank_ifsc_code?: string | null
+          bank_name?: string | null
+          bank_verified?: boolean | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string | null
+          pan_number_masked?: never
+          pan_verified?: boolean | null
+          pincode?: string | null
+          state?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          verification_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kyc_details_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       calculate_portfolio_value: {
         Args: { user_uuid: string }
         Returns: {
-          total_invested: number
           current_value: number
-          total_gains: number
           percentage_gain: number
+          total_gains: number
+          total_invested: number
         }[]
       }
       calculate_sip: {
         Args: {
-          monthly_amount: number
           annual_return_rate: number
           investment_years: number
+          monthly_amount: number
         }
         Returns: {
-          total_invested: number
           maturity_value: number
+          total_invested: number
           wealth_gained: number
         }[]
+      }
+      get_kyc_details_secure: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          aadhaar_number: string
+          aadhaar_verified: boolean
+          address_line1: string
+          address_line2: string
+          bank_account_number: string
+          bank_ifsc_code: string
+          bank_name: string
+          bank_verified: boolean
+          city: string
+          country: string
+          created_at: string
+          id: string
+          pan_number: string
+          pan_verified: boolean
+          pincode: string
+          state: string
+          updated_at: string
+          user_id: string
+          verification_status: string
+        }[]
+      }
+      mask_sensitive_data: {
+        Args: { data_type: string; value: string }
+        Returns: string
+      }
+      update_kyc_details_secure: {
+        Args: {
+          p_aadhaar_number?: string
+          p_address_line1?: string
+          p_address_line2?: string
+          p_bank_account_number?: string
+          p_bank_ifsc_code?: string
+          p_bank_name?: string
+          p_city?: string
+          p_country?: string
+          p_pan_number?: string
+          p_pincode?: string
+          p_state?: string
+        }
+        Returns: string
       }
     }
     Enums: {
