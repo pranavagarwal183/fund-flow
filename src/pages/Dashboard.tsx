@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
@@ -25,9 +25,56 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { OnboardingFlow } from "@/components/OnboardingFlow";
+import { useAuth } from "@/components/AuthProvider";
 
 const Dashboard = () => {
   const [showBalance, setShowBalance] = useState(true);
+  const { user, userProfile, loading, refreshProfile } = useAuth();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Check if user needs onboarding
+  useEffect(() => {
+    if (userProfile && userProfile.onboarding_status !== 'COMPLETE') {
+      setShowOnboarding(true);
+    } else {
+      setShowOnboarding(false);
+    }
+  }, [userProfile]);
+
+  const handleOnboardingComplete = async () => {
+    await refreshProfile();
+    setShowOnboarding(false);
+  };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-background">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Show onboarding if not complete
+  if (showOnboarding) {
+    return (
+      <div className="flex flex-col min-h-screen bg-background">
+        <Header />
+        <main className="flex-1">
+          <OnboardingFlow onComplete={handleOnboardingComplete} />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   const portfolioData = {
     currentValue: 245750,

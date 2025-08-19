@@ -796,6 +796,7 @@ export type Database = {
           id: string
           kyc_completed_at: string | null
           kyc_status: string | null
+          onboarding_status: string | null
           phone: string | null
           risk_category: string | null
           risk_profile_status: string | null
@@ -812,6 +813,7 @@ export type Database = {
           id: string
           kyc_completed_at?: string | null
           kyc_status?: string | null
+          onboarding_status?: string | null
           phone?: string | null
           risk_category?: string | null
           risk_profile_status?: string | null
@@ -828,6 +830,7 @@ export type Database = {
           id?: string
           kyc_completed_at?: string | null
           kyc_status?: string | null
+          onboarding_status?: string | null
           phone?: string | null
           risk_category?: string | null
           risk_profile_status?: string | null

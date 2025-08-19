@@ -21,7 +21,7 @@ import Learn from "./pages/Learn";
 
 // Import AuthProvider and ProtectedRoute
 import { AuthProvider } from "./components/AuthProvider";
-import ProtectedRoute from "./components/ProtectedRoute";
+// import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 
@@ -49,32 +49,13 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/services" element={<Services />} />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/funds" element={
-              <ProtectedRoute>
-                <Funds />
-              </ProtectedRoute>
-            } />
-            <Route path="/watchlist" element={
-              <Watchlist />
-            } />
-            <Route path="/reports" element={
-              <ProtectedRoute>
-                <Reports />
-              </ProtectedRoute>
-            } />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/watchlist" element={<Watchlist />} />
+            <Route path="/reports" element={<Reports />} />
             <Route path="/goals" element={<Goals />} />
             <Route path="/calculators" element={<Calculators />} />
             <Route path="/mutual-funds" element={<MutualFunds />} />
-            <Route path="/portfolio-analysis" element={
-              <ProtectedRoute>
-                <PortfolioAnalysis />
-              </ProtectedRoute>
-            } />
+            <Route path="/portfolio-analysis" element={<PortfolioAnalysis />} />
             <Route path="/learn" element={<Learn />} />
             <Route path="/risk-disclaimer" element={<RiskDisclaimer />} />
             <Route path="/privacy" element={<Privacy />} />
