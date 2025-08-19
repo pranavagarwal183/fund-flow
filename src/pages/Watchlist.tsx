@@ -295,7 +295,6 @@ const Watchlist = () => {
         setInitialLoading(true);
         setError("");
 
-        console.log("Fetching all funds from Supabase...");
         const { data, error: supabaseError } = await supabase
           .from('mutual_fund_schemes')
           .select('*')
@@ -303,20 +302,16 @@ const Watchlist = () => {
           .order('scheme_name');
 
         if (supabaseError) {
-          console.error("Supabase error:", supabaseError);
           setError("Failed to load fund database. Please try again later.");
           return;
         }
 
         if (data && data.length > 0) {
-          console.log(`Successfully loaded ${data.length} funds from database`);
           setAllFunds(data);
         } else {
-          console.log("No funds found in database");
           setError("No funds available in the database.");
         }
       } catch (err: any) {
-        console.error("Error fetching funds:", err);
         setError("Failed to load fund database. Please check your connection and try again.");
       } finally {
         setInitialLoading(false);
