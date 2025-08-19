@@ -340,6 +340,75 @@ export type Database = {
           },
         ]
       }
+      kyc_display_cache: {
+        Row: {
+          aadhaar_number_masked: string | null
+          aadhaar_verified: boolean | null
+          address_line1: string | null
+          address_line2: string | null
+          bank_account_number_masked: string | null
+          bank_ifsc_code: string | null
+          bank_name: string | null
+          bank_verified: boolean | null
+          cache_updated_at: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          id: string
+          pan_number_masked: string | null
+          pan_verified: boolean | null
+          pincode: string | null
+          state: string | null
+          updated_at: string | null
+          user_id: string
+          verification_status: string | null
+        }
+        Insert: {
+          aadhaar_number_masked?: string | null
+          aadhaar_verified?: boolean | null
+          address_line1?: string | null
+          address_line2?: string | null
+          bank_account_number_masked?: string | null
+          bank_ifsc_code?: string | null
+          bank_name?: string | null
+          bank_verified?: boolean | null
+          cache_updated_at?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          pan_number_masked?: string | null
+          pan_verified?: boolean | null
+          pincode?: string | null
+          state?: string | null
+          updated_at?: string | null
+          user_id: string
+          verification_status?: string | null
+        }
+        Update: {
+          aadhaar_number_masked?: string | null
+          aadhaar_verified?: boolean | null
+          address_line1?: string | null
+          address_line2?: string | null
+          bank_account_number_masked?: string | null
+          bank_ifsc_code?: string | null
+          bank_name?: string | null
+          bank_verified?: boolean | null
+          cache_updated_at?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          pan_number_masked?: string | null
+          pan_verified?: boolean | null
+          pincode?: string | null
+          state?: string | null
+          updated_at?: string | null
+          user_id?: string
+          verification_status?: string | null
+        }
+        Relationships: []
+      }
       mutual_fund_schemes: {
         Row: {
           amc_name: string
@@ -814,80 +883,7 @@ export type Database = {
       }
     }
     Views: {
-      kyc_details_masked: {
-        Row: {
-          aadhaar_number_masked: string | null
-          aadhaar_verified: boolean | null
-          address_line1: string | null
-          address_line2: string | null
-          bank_account_number_masked: string | null
-          bank_ifsc_code: string | null
-          bank_name: string | null
-          bank_verified: boolean | null
-          city: string | null
-          country: string | null
-          created_at: string | null
-          id: string | null
-          pan_number_masked: string | null
-          pan_verified: boolean | null
-          pincode: string | null
-          state: string | null
-          updated_at: string | null
-          user_id: string | null
-          verification_status: string | null
-        }
-        Insert: {
-          aadhaar_number_masked?: never
-          aadhaar_verified?: boolean | null
-          address_line1?: string | null
-          address_line2?: string | null
-          bank_account_number_masked?: never
-          bank_ifsc_code?: string | null
-          bank_name?: string | null
-          bank_verified?: boolean | null
-          city?: string | null
-          country?: string | null
-          created_at?: string | null
-          id?: string | null
-          pan_number_masked?: never
-          pan_verified?: boolean | null
-          pincode?: string | null
-          state?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-          verification_status?: string | null
-        }
-        Update: {
-          aadhaar_number_masked?: never
-          aadhaar_verified?: boolean | null
-          address_line1?: string | null
-          address_line2?: string | null
-          bank_account_number_masked?: never
-          bank_ifsc_code?: string | null
-          bank_name?: string | null
-          bank_verified?: boolean | null
-          city?: string | null
-          country?: string | null
-          created_at?: string | null
-          id?: string | null
-          pan_number_masked?: never
-          pan_verified?: boolean | null
-          pincode?: string | null
-          state?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-          verification_status?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "kyc_details_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       calculate_portfolio_value: {
@@ -938,6 +934,10 @@ export type Database = {
       mask_sensitive_data: {
         Args: { data_type: string; value: string }
         Returns: string
+      }
+      refresh_kyc_display_cache: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       update_kyc_details_secure: {
         Args: {
