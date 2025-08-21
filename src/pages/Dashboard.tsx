@@ -33,9 +33,11 @@ const Dashboard = () => {
   const { user, userProfile, loading, refreshProfile } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // Check if user needs onboarding
+  // Check if user needs onboarding based on new status values
   useEffect(() => {
-    if (userProfile && userProfile.onboarding_status !== 'COMPLETE') {
+    if (userProfile && 
+        userProfile.onboarding_status && 
+        !['COMPLETE'].includes(userProfile.onboarding_status)) {
       setShowOnboarding(true);
     } else {
       setShowOnboarding(false);
