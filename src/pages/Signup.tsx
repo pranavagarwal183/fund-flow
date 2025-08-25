@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../components/AuthProvider";
@@ -6,8 +6,10 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { CheckCircle, AlertCircle, Mail } from "lucide-react";
 
 export default function Signup() {
   const [form, setForm] = useState({
@@ -19,32 +21,70 @@ export default function Signup() {
     gender: "",
   });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setSuccess("");
     setLoading(true);
-    // 1. Create user in Supabase Auth
-    const redirectUrl = `${window.location.origin}/`;
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
-      options: {
-        emailRedirectTo: redirectUrl,
-      },
-    });
-    if (signUpError) {
-      setError(signUpError.message);
-      setLoading(false);
-      return;
-    }
+    
+    try {
+      // Validate form
+      if (form.password.length < 6) {
+        setError("Password must be at least 6 characters long.");
+        setLoading(false);
+        return;
+      }
 
-    // Profile will be created after the user logs in.
-    setLoading(false);
-    navigate("/login");
+      const redirectUrl = `${window.location.origin}/dashboard`;
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: form.email.trim(),
+        password: form.password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: form.full_name,
+            phone: form.phone,
+            date_of_birth: form.date_of_birth,
+            gender: form.gender,
+          }
+        },
+      });
+
+      if (signUpError) {
+        if (signUpError.message.includes('already registered')) {
+          setError("This email is already registered. Please try logging in instead.");
+        } else {
+          setError(signUpError.message);
+        }
+      } else if (data.user) {
+        if (data.user.email_confirmed_at) {
+          // User is immediately confirmed (email confirmation disabled)
+          setSuccess("Account created successfully! Redirecting...");
+          setTimeout(() => navigate("/dashboard"), 2000);
+        } else {
+          // Email confirmation required
+          setSuccess("Account created! Please check your email and click the confirmation link before logging in.");
+          setTimeout(() => navigate("/login"), 3000);
+        }
+      }
+    } catch (err) {
+      console.error('Signup error:', err);
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -58,7 +98,7 @@ export default function Signup() {
           <CardContent>
             {user ? (
               <div className="text-center space-y-4">
-                <div className="text-green-600">You are already logged in.</div>
+                <div className="text-success">✓ You are already logged in!</div>
                 <Button className="w-full" onClick={() => navigate("/dashboard")}>
                   Go to Dashboard
                 </Button>
@@ -66,8 +106,24 @@ export default function Signup() {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
                 {error && (
-                  <div className="text-red-500 text-sm text-center">{error}</div>
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
                 )}
+                {success && (
+                  <Alert className="border-green-200 bg-green-50">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-green-800">{success}</AlertDescription>
+                  </Alert>
+                )}
+                
+                <Alert className="border-blue-200 bg-blue-50">
+                  <Mail className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    After signing up, you'll receive a confirmation email. Please check your inbox and click the confirmation link before logging in.
+                  </AlertDescription>
+                </Alert>
                 <div>
                   <Label htmlFor="email">Email</Label>
                   <Input

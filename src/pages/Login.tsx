@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../components/AuthProvider";
@@ -6,24 +6,57 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { CheckCircle, AlertCircle } from "lucide-react";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setSuccess("");
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword(form);
-    setLoading(false);
-    if (error) setError(error.message);
-    else navigate("/dashboard");
+    
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: form.email.trim(),
+        password: form.password,
+      });
+      
+      if (authError) {
+        // Handle specific error cases
+        if (authError.message.includes('Invalid login credentials')) {
+          setError("Invalid email or password. If you just signed up, please check your email and confirm your account first.");
+        } else if (authError.message.includes('Email not confirmed')) {
+          setError("Please check your email and click the confirmation link before logging in.");
+        } else {
+          setError(authError.message);
+        }
+      } else if (data.user) {
+        setSuccess("Login successful! Redirecting...");
+        setTimeout(() => navigate("/dashboard"), 1000);
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -36,16 +69,25 @@ export default function Login() {
           </CardHeader>
           <CardContent>
             {user ? (
-              <div className="text-center space-y-4">
-                <div className="text-green-600">You are already logged in.</div>
-                <Button className="w-full" onClick={() => navigate("/dashboard")}>
-                  Go to Dashboard
-                </Button>
-              </div>
+                <div className="text-center space-y-4">
+                  <div className="text-success">✓ You are already logged in!</div>
+                  <Button className="w-full" onClick={() => navigate("/dashboard")}>
+                    Go to Dashboard
+                  </Button>
+                </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
                 {error && (
-                  <div className="text-red-500 text-sm text-center">{error}</div>
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                {success && (
+                  <Alert className="border-green-200 bg-green-50">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-green-800">{success}</AlertDescription>
+                  </Alert>
                 )}
                 <div>
                   <Label htmlFor="email">Email</Label>
