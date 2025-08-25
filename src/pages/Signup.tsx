@@ -69,12 +69,38 @@ export default function Signup() {
           setError(signUpError.message);
         }
       } else if (data.user) {
+        // Wait a moment for the trigger to complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Try to manually create profile if trigger failed
+        try {
+          const { error: profileError } = await supabase
+            .from('user_profiles')
+            .insert({
+              id: data.user.id,
+              email: data.user.email,
+              full_name: form.full_name,
+              phone: form.phone,
+              date_of_birth: form.date_of_birth,
+              gender: form.gender,
+              kyc_status: 'pending',
+              risk_profile_status: 'pending',
+              account_status: 'active'
+            });
+          
+          if (profileError) {
+            console.warn('Profile creation warning:', profileError);
+            // Continue anyway as the trigger might have succeeded
+          }
+        } catch (profileErr) {
+          console.warn('Profile creation error:', profileErr);
+          // Continue anyway
+        }
+
         if (data.user.email_confirmed_at) {
-          // User is immediately confirmed (email confirmation disabled)
           setSuccess("Account created successfully! Redirecting...");
           setTimeout(() => navigate("/dashboard"), 2000);
         } else {
-          // Email confirmation required
           setSuccess("Account created! Please check your email and click the confirmation link before logging in.");
           setTimeout(() => navigate("/login"), 3000);
         }
