@@ -74,14 +74,18 @@ export const Header = () => {
               to="/goals"
               className="flex items-center space-x-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
             >
-              <Calculator className="h-4 w-4" />
               <span>Goal Planner</span>
+            </Link>
+            <Link
+              to="/calculators"
+              className="flex items-center space-x-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            >
+              <span>Calculators</span>
             </Link>
             <Link
               to="/watchlist"
               className="flex items-center space-x-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
             >
-              <Calculator className="h-4 w-4" />
               <span>Watchlist</span>
             </Link>
             <Link
