@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
@@ -23,31 +23,48 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { useAuth } from "@/components/AuthProvider";
+import AdvisorPortfolioComparison from "@/components/AdvisorPortfolioComparison";
 
 const Dashboard = () => {
   const [showBalance, setShowBalance] = useState(true);
   const { user, userProfile, loading, refreshProfile } = useAuth();
-  const [showOnboarding, setShowOnboarding] = useState(false);
-
-  // Check if user needs onboarding based on new status values
-  useEffect(() => {
-    if (userProfile && 
-        userProfile.onboarding_status && 
-        !['COMPLETE'].includes(userProfile.onboarding_status)) {
-      setShowOnboarding(true);
-    } else {
-      setShowOnboarding(false);
-    }
+  const needsOnboarding = useMemo(() => {
+    const status = (userProfile as any)?.onboarding_status as string | undefined;
+    return !!(status && !['COMPLETE'].includes(status));
   }, [userProfile]);
+
+  const storageKey = useMemo(() => `ff_welcome_dismissed_${user?.id || 'anon'}`,[user?.id]);
+  const [welcomeDismissed, setWelcomeDismissed] = useState<boolean>(false);
+  const [showOnboardingModal, setShowOnboardingModal] = useState<boolean>(false);
+
+  // Initialize welcome dismissed state from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      setWelcomeDismissed(stored === '1');
+    } catch {}
+  }, [storageKey]);
 
   const handleOnboardingComplete = async () => {
     await refreshProfile();
-    setShowOnboarding(false);
+    setShowOnboardingModal(false);
   };
+
+  const handleExploreFirst = () => {
+    try {
+      localStorage.setItem(storageKey, '1');
+    } catch {}
+    setWelcomeDismissed(true);
+  };
+
+  const openOnboarding = () => setShowOnboardingModal(true);
+  const closeOnboarding = () => setShowOnboardingModal(false);
 
   // Show loading state
   if (loading) {
@@ -65,18 +82,7 @@ const Dashboard = () => {
     );
   }
 
-  // Show onboarding if not complete
-  if (showOnboarding) {
-    return (
-      <div className="flex flex-col min-h-screen bg-background">
-        <Header />
-        <main className="flex-1">
-          <OnboardingFlow onComplete={handleOnboardingComplete} />
-        </main>
-        <Footer />
-      </div>
-    );
-  }
+  // Mandatory onboarding removed: users can explore even if profile incomplete.
 
   const portfolioData = {
     currentValue: 245750,
@@ -206,6 +212,38 @@ const Dashboard = () => {
         initial="hidden"
         animate="visible"
       >
+        {/* Welcome Choice Card for new users (one-time) */}
+        {needsOnboarding && !welcomeDismissed && (
+          <motion.div variants={itemVariants} className="mb-6">
+            <Card className="shadow-soft card-hover">
+              <CardHeader>
+                <CardTitle className="text-xl">Welcome to Your Financial Future!</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">Unlock goal-based investing tailored to you. Complete your profile now or explore the platform first — your choice.</p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button className="micro-press" onClick={openOnboarding}>
+                    Complete Profile & Start Investing
+                  </Button>
+                  <Button variant="outline" className="micro-press" onClick={handleExploreFirst}>
+                    Explore the Platform First
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Persistent unobtrusive CTA alert when exploring */}
+        {needsOnboarding && welcomeDismissed && (
+          <motion.div variants={itemVariants} className="mb-6">
+            <Alert>
+              <AlertDescription>
+                Your account is not yet active. <button className="underline font-medium" onClick={openOnboarding}>Complete your profile</button> to unlock goal-based investing.
+              </AlertDescription>
+            </Alert>
+          </motion.div>
+        )}
         {/* Welcome Section */}
         <motion.div 
           className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8"
@@ -317,6 +355,13 @@ const Dashboard = () => {
         </motion.div>
 
         <div className="grid lg:grid-cols-3 gap-8">
+          {/* Intrigue Widget: Advisor vs Self-Managed Portfolio for users not onboarded */}
+          {needsOnboarding && (
+            <motion.div className="lg:col-span-3" variants={itemVariants}>
+              <AdvisorPortfolioComparison onStartOnboarding={openOnboarding} />
+            </motion.div>
+          )}
+
           {/* Holdings */}
           <motion.div 
             className="lg:col-span-2"
@@ -450,6 +495,18 @@ const Dashboard = () => {
           </motion.div>
         </div>
       </motion.main>
+
+      {/* Onboarding Modal */}
+      <Dialog open={showOnboardingModal} onOpenChange={(open) => open ? openOnboarding() : closeOnboarding()}>
+        <DialogContent className="max-w-5xl w-full p-0 overflow-hidden">
+          <DialogHeader className="px-6 pt-6">
+            <DialogTitle>Complete Your Profile</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[80vh] overflow-auto">
+            <OnboardingFlow onComplete={handleOnboardingComplete} />
+          </div>
+        </DialogContent>
+      </Dialog>
       
       <Footer />
     </div>

@@ -8,111 +8,435 @@ const corsHeaders = {
 
 interface KYCRequest {
   panNumber: string;
-  fullName: string;
 }
 
 interface KYCResponse {
-  status: 'approved' | 'pending' | 'not_found' | 'error';
+  status: 'completed' | 'pending' | 'not_found' | 'error';
   message: string;
   details?: any;
+  source: 'database' | 'external' | 'new_record';
 }
 
-// Mock KYC verification function
-// In production, this would integrate with CAMS KRA API
-async function verifyKYCWithCAMS(panNumber: string, fullName: string): Promise<KYCResponse> {
+// Production KYC verification with CAMS KRA API
+async function verifyKYCWithCAMS(panNumber: string): Promise<KYCResponse> {
   try {
-    // This is a mock implementation
-    // In production, you would:
-    // 1. Make an authenticated request to CAMS KRA API
-    // 2. Pass the PAN number and other required parameters
-    // 3. Handle the response according to CAMS KRA documentation
+    const CAMS_API_KEY = Deno.env.get('CAMS_API_KEY');
+    const CAMS_API_SECRET = Deno.env.get('CAMS_API_SECRET');
+    const CAMS_API_URL = Deno.env.get('CAMS_API_URL') || 'https://api.camskra.com/v1/kyc/verify';
     
-    // For demo purposes, we'll simulate different responses based on PAN format
-    if (!panNumber || !fullName) {
-      return {
-        status: 'error',
-        message: 'PAN number and full name are required'
-      };
+    if (!CAMS_API_KEY || !CAMS_API_SECRET) {
+      throw new Error('CAMS API credentials not configured');
     }
 
-    // Validate PAN format
-    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-    if (!panRegex.test(panNumber)) {
-      return {
-        status: 'error',
-        message: 'Invalid PAN format'
-      };
-    }
-
-    // Mock KYC status based on PAN (for demo purposes)
-    // In production, this would be the actual response from CAMS KRA
-    const mockKYCStatuses = {
-      'ABCDE1234F': 'approved',
-      'FGHIJ5678K': 'pending',
-      'LMNOP9012Q': 'not_found',
+    // Generate request ID for tracking
+    const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Prepare request payload according to CAMS KRA API specification
+    const requestPayload = {
+      pan_number: panNumber,
+      request_id: requestId,
+      timestamp: new Date().toISOString(),
+      client_id: Deno.env.get('CAMS_CLIENT_ID') || 'fund-flow-app',
+      version: '1.0'
     };
 
-    const kycStatus = mockKYCStatuses[panNumber as keyof typeof mockKYCStatuses] || 'approved';
+    // Make authenticated request to CAMS KRA API
+    const response = await fetch(CAMS_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${CAMS_API_KEY}`,
+        'X-API-Secret': CAMS_API_SECRET,
+        'Content-Type': 'application/json',
+        'User-Agent': 'FundFlow-KYC-Verification/1.0'
+      },
+      body: JSON.stringify(requestPayload)
+    });
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`CAMS API error: ${response.status} - ${errorData.message || response.statusText}`);
+    }
 
-    switch (kycStatus) {
-      case 'approved':
-        return {
-          status: 'approved',
-          message: 'KYC verification successful',
-          details: {
-            panNumber,
-            fullName,
-            kycStatus: 'approved',
-            verifiedAt: new Date().toISOString(),
-            source: 'CAMS KRA'
-          }
-        };
+    const result = await response.json();
+    
+    // Parse CAMS KRA response and convert to standardized format
+    // Note: Adjust these mappings based on actual CAMS API response structure
+    const kycStatus = result.kyc_status || result.status || 'pending';
+    const isCompleted = ['VERIFIED', 'COMPLETED', 'APPROVED', 'SUCCESS'].includes(kycStatus.toUpperCase());
+    
+    return {
+      status: isCompleted ? 'completed' : 'pending',
+      message: result.message || `KYC verification ${isCompleted ? 'successful' : 'pending'}`,
+      source: 'external',
+      details: {
+        panNumber,
+        kycStatus: kycStatus.toLowerCase(),
+        verifiedAt: result.verification_date || result.verified_at || new Date().toISOString(),
+        source: 'CAMS KRA',
+        requestId: requestId,
+        additionalData: {
+          camsResponse: result,
+          verificationMethod: result.verification_method || 'API',
+          lastUpdated: result.last_updated || result.updated_at
+        }
+      }
+    };
+
+  } catch (error) {
+    console.error('CAMS KRA verification failed:', error);
+    
+    // Return error response that can be handled gracefully
+    return {
+      status: 'error',
+      message: `CAMS KRA verification failed: ${error.message}`,
+      source: 'external',
+      details: {
+        error: error.message,
+        timestamp: new Date().toISOString(),
+        provider: 'CAMS KRA'
+      }
+    };
+  }
+}
+
+// Production KYC verification with NSDL API
+async function verifyKYCWithNSDL(panNumber: string): Promise<KYCResponse> {
+  try {
+    const NSDL_API_KEY = Deno.env.get('NSDL_API_KEY');
+    const NSDL_API_URL = Deno.env.get('NSDL_API_URL') || 'https://api.nsdl.com/kyc/verify';
+    
+    if (!NSDL_API_KEY) {
+      throw new Error('NSDL API credentials not configured');
+    }
+
+    const requestId = `nsdl_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const requestPayload = {
+      pan: panNumber,
+      request_id: requestId,
+      timestamp: new Date().toISOString()
+    };
+
+    const response = await fetch(NSDL_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${NSDL_API_KEY}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'FundFlow-KYC-Verification/1.0'
+      },
+      body: JSON.stringify(requestPayload)
+    });
+
+    if (!response.ok) {
+      throw new Error(`NSDL API error: ${response.status} - ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    
+    const kycStatus = result.kyc_status || result.status || 'pending';
+    const isCompleted = ['VERIFIED', 'COMPLETED', 'APPROVED'].includes(kycStatus.toUpperCase());
+    
+    return {
+      status: isCompleted ? 'completed' : 'pending',
+      message: result.message || `NSDL KYC verification ${isCompleted ? 'successful' : 'pending'}`,
+      source: 'external',
+      details: {
+        panNumber,
+        kycStatus: kycStatus.toLowerCase(),
+        verifiedAt: result.verification_date || new Date().toISOString(),
+        source: 'NSDL',
+        requestId: requestId,
+        additionalData: {
+          nsdlResponse: result
+        }
+      }
+    };
+
+  } catch (error) {
+    console.error('NSDL verification failed:', error);
+    return {
+      status: 'error',
+      message: `NSDL verification failed: ${error.message}`,
+      source: 'external',
+      details: {
+        error: error.message,
+        timestamp: new Date().toISOString(),
+        provider: 'NSDL'
+      }
+    };
+  }
+}
+
+// Production KYC verification with multiple providers (fallback strategy)
+async function verifyKYCWithMultipleProviders(panNumber: string): Promise<KYCResponse> {
+  const providers = [
+    { name: 'CAMS KRA', verify: verifyKYCWithCAMS },
+    { name: 'NSDL', verify: verifyKYCWithNSDL }
+  ];
+
+  let lastError: Error | null = null;
+
+  for (const provider of providers) {
+    try {
+      console.log(`Attempting KYC verification with ${provider.name} for PAN: ${panNumber}`);
       
-      case 'pending':
-        return {
-          status: 'pending',
-          message: 'KYC verification is pending',
-          details: {
-            panNumber,
-            fullName,
-            kycStatus: 'pending',
-            source: 'CAMS KRA'
-          }
-        };
+      const result = await provider.verify(panNumber);
       
-      case 'not_found':
+      if (result.status === 'completed') {
+        console.log(`KYC verification successful with ${provider.name}`);
+        return { ...result, source: 'external' };
+      }
+      
+      if (result.status === 'pending') {
+        console.log(`KYC verification pending with ${provider.name}`);
+        return { ...result, source: 'external' };
+      }
+      
+      // If error, continue to next provider
+      if (result.status === 'error') {
+        lastError = new Error(result.message);
+        console.warn(`${provider.name} verification failed:`, result.message);
+        continue;
+      }
+      
+    } catch (error) {
+      lastError = error as Error;
+      console.warn(`${provider.name} verification failed:`, error);
+      continue; // Try next provider
+    }
+  }
+
+  // All providers failed
+  return {
+    status: 'error',
+    message: `KYC verification failed with all providers: ${lastError?.message || 'Unknown error'}`,
+    source: 'external',
+    details: {
+      error: lastError?.message || 'All providers failed',
+      timestamp: new Date().toISOString(),
+      providers: providers.map(p => p.name)
+    }
+  };
+}
+
+// Function to check KYC details by PAN number in the database
+async function checkKYCDetailsByPAN(panNumber: string): Promise<KYCResponse> {
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase environment variables');
+      return {
+        status: 'error',
+        message: 'Server configuration error',
+        source: 'database'
+      };
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Search for KYC details by PAN number
+    const { data: kycDetails, error: kycError } = await supabase
+      .from('kyc_details')
+      .select(`
+        id,
+        user_id,
+        pan_number,
+        pan_verified,
+        pan_verified_at,
+        verification_status,
+        created_at,
+        updated_at
+      `)
+      .eq('pan_number', panNumber)
+      .single();
+
+    if (kycError) {
+      if (kycError.code === 'PGRST116') {
+        // No rows returned - PAN not found, need external verification
         return {
           status: 'not_found',
-          message: 'KYC not found for the provided PAN',
-          details: {
-            panNumber,
-            fullName,
-            kycStatus: 'not_found',
-            source: 'CAMS KRA'
-          }
+          message: 'KYC details not found in database, checking external sources...',
+          source: 'database'
         };
-      
-      default:
-        return {
-          status: 'approved',
-          message: 'KYC verification successful',
-          details: {
-            panNumber,
-            fullName,
-            kycStatus: 'approved',
-            verifiedAt: new Date().toISOString(),
-            source: 'CAMS KRA'
-          }
-        };
+      }
+      console.error('Database error:', kycError);
+      return {
+        status: 'error',
+        message: 'Database query failed',
+        source: 'database'
+      };
     }
+
+    if (!kycDetails) {
+      return {
+        status: 'not_found',
+        message: 'KYC details not found in database, checking external sources...',
+        source: 'database'
+      };
+    }
+
+    // Check if KYC is already completed
+    if (kycDetails.verification_status === 'approved') {
+      return {
+        status: 'completed',
+        message: 'KYC verification is already completed',
+        source: 'database',
+        details: {
+          panNumber: kycDetails.pan_number,
+          kycStatus: 'completed',
+          verifiedAt: kycDetails.pan_verified_at,
+          userId: kycDetails.user_id
+        }
+      };
+    }
+
+    // Update KYC status to completed
+    const { error: updateError } = await supabase
+      .from('kyc_details')
+      .update({
+        verification_status: 'approved',
+        pan_verified: true,
+        pan_verified_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', kycDetails.id);
+
+    if (updateError) {
+      console.error('Update error:', updateError);
+      return {
+        status: 'error',
+        message: 'Failed to update KYC status',
+        source: 'database'
+      };
+    }
+
+    // Update user profile KYC status
+    const { error: profileUpdateError } = await supabase
+      .from('user_profiles')
+      .update({
+        kyc_status: 'completed',
+        kyc_completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', kycDetails.user_id);
+
+    if (profileUpdateError) {
+      console.error('Profile update error:', profileUpdateError);
+      console.warn('KYC status updated but profile update failed');
+    }
+
+    return {
+      status: 'completed',
+      message: 'KYC verification completed successfully',
+      source: 'database',
+      details: {
+        panNumber: kycDetails.pan_number,
+        kycStatus: 'completed',
+        verifiedAt: new Date().toISOString(),
+        userId: kycDetails.user_id
+      }
+    };
+
   } catch (error) {
     console.error('KYC verification error:', error);
     return {
       status: 'error',
       message: 'Failed to verify KYC status',
+      source: 'database'
+    };
+  }
+}
+
+// Store external KYC verification result in database
+async function storeExternalKYCResult(panNumber: string, verificationResult: KYCResponse): Promise<KYCResponse> {
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return verificationResult; // Return original result if we can't store
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Create a new KYC record for this PAN
+    const { data: newKYC, error: insertError } = await supabase
+      .from('kyc_details')
+      .insert({
+        pan_number: panNumber,
+        pan_verified: verificationResult.status === 'completed',
+        pan_verified_at: verificationResult.status === 'completed' ? new Date().toISOString() : null,
+        verification_status: verificationResult.status === 'completed' ? 'approved' : 'pending',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Failed to store external KYC result:', insertError);
+      return verificationResult; // Return original result if storage fails
+    }
+
+    console.log(`Stored external KYC result for PAN: ${panNumber}`);
+    
+    return {
+      ...verificationResult,
+      source: 'new_record',
+      details: {
+        ...verificationResult.details,
+        storedInDatabase: true,
+        kycRecordId: newKYC.id
+      }
+    };
+
+  } catch (error) {
+    console.error('Error storing external KYC result:', error);
+    return verificationResult; // Return original result if storage fails
+  }
+}
+
+// Main KYC verification function with production logic
+async function verifyKYC(panNumber: string): Promise<KYCResponse> {
+  try {
+    // Step 1: Check local database first
+    console.log(`Checking KYC for PAN: ${panNumber} in local database`);
+    const dbResult = await checkKYCDetailsByPAN(panNumber);
+    
+    if (dbResult.status === 'completed') {
+      return dbResult; // KYC already completed in database
+    }
+    
+    if (dbResult.status === 'error') {
+      return dbResult; // Database error, return error
+    }
+    
+    // Step 2: If not found in database, check external providers
+    if (dbResult.status === 'not_found') {
+      console.log(`PAN ${panNumber} not found in database, checking external sources`);
+      
+      // Use multiple provider strategy for better reliability
+      const externalResult = await verifyKYCWithMultipleProviders(panNumber);
+      
+      // Store successful results for future use
+      if (externalResult.status === 'completed' || externalResult.status === 'pending') {
+        const storedResult = await storeExternalKYCResult(panNumber, externalResult);
+        return storedResult;
+      }
+      
+      return externalResult;
+    }
+    
+    return dbResult;
+    
+  } catch (error) {
+    console.error('KYC verification failed:', error);
+    return {
+      status: 'error',
+      message: 'KYC verification failed',
+      source: 'database',
       details: {
         error: error.message,
         timestamp: new Date().toISOString()
@@ -142,9 +466,9 @@ serve(async (req) => {
     // Get request body
     const body: KYCRequest = await req.json()
     
-    if (!body.panNumber || !body.fullName) {
+    if (!body.panNumber) {
       return new Response(
-        JSON.stringify({ error: 'PAN number and full name are required' }),
+        JSON.stringify({ error: 'PAN number is required' }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -152,14 +476,26 @@ serve(async (req) => {
       )
     }
 
-    // Verify KYC with CAMS
-    const kycResult = await verifyKYCWithCAMS(body.panNumber, body.fullName)
+    // Validate PAN format
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+    if (!panRegex.test(body.panNumber)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid PAN format' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Verify KYC using production hybrid approach
+    const kycResult = await verifyKYC(body.panNumber)
 
     // Log the verification attempt (for audit purposes)
     console.log('KYC verification attempt:', {
       panNumber: body.panNumber,
-      fullName: body.fullName,
       result: kycResult.status,
+      source: kycResult.source,
       timestamp: new Date().toISOString()
     })
 

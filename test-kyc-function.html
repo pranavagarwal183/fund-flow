@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KYC Verification Test - Hybrid System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input[type="text"]:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .result.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .result.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .result.info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .result.warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+        .pan-format {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .source-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-left: 10px;
+        }
+        .source-database {
+            background-color: #28a745;
+            color: white;
+        }
+        .source-external {
+            background-color: #17a2b8;
+            color: white;
+        }
+        .source-new_record {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .detail-item {
+            background: rgba(255,255,255,0.5);
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #555;
+        }
+        .system-info {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #495057;
+        }
+        .system-info h3 {
+            margin-top: 0;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>KYC Verification Test - Hybrid System</h1>
+        
+        <div class="form-group">
+            <label for="panNumber">PAN Number:</label>
+            <input type="text" id="panNumber" placeholder="Enter PAN number (e.g., ABCDE1234F)" maxlength="10">
+            <div class="pan-format">Format: ABCDE1234F (5 letters + 4 digits + 1 letter)</div>
+        </div>
+        
+        <button onclick="verifyKYC()" id="verifyBtn">Verify KYC</button>
+        
+        <div id="result" class="result"></div>
+        
+        <div class="system-info">
+            <h3>How the Hybrid System Works:</h3>
+            <ol>
+                <li><strong>Database Check:</strong> First searches your local database for existing KYC records</li>
+                <li><strong>External Verification:</strong> If not found locally, checks external KYC providers (CAMS KRA, NSDL, etc.)</li>
+                <li><strong>Storage:</strong> Stores external verification results for future use</li>
+                <li><strong>Response:</strong> Returns KYC status with source information</li>
+            </ol>
+            
+            <h3>Response Sources:</h3>
+            <ul>
+                <li><span class="source-badge source-database">Database</span> - Found in local database</li>
+                <li><span class="source-badge source-external">External</span> - Verified from external provider</li>
+                <li><span class="source-badge source-new_record">New Record</span> - Stored after external verification</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        async function verifyKYC() {
+            const panNumber = document.getElementById('panNumber').value.trim().toUpperCase();
+            const verifyBtn = document.getElementById('verifyBtn');
+            const resultDiv = document.getElementById('result');
+            
+            // Validate PAN format
+            const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+            if (!panRegex.test(panNumber)) {
+                showResult('Please enter a valid PAN number in the format ABCDE1234F', 'error');
+                return;
+            }
+            
+            // Show loading state
+            verifyBtn.disabled = true;
+            verifyBtn.textContent = 'Verifying...';
+            showResult('Verifying KYC status...', 'info');
+            
+            try {
+                // Replace with your actual Supabase edge function URL
+                const response = await fetch('https://zrozbgygozyzziuzwlap.supabase.co/functions/v1/kyc-verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer YOUR_ANON_KEY_HERE' // Replace with your anon key
+                    },
+                    body: JSON.stringify({ panNumber })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    displayKYCResult(result);
+                } else {
+                    showResult(`Error: ${result.error || 'Failed to verify KYC'}`, 'error');
+                }
+                
+            } catch (error) {
+                console.error('KYC verification error:', error);
+                showResult(`Network error: ${error.message}`, 'error');
+            } finally {
+                // Reset button state
+                verifyBtn.disabled = false;
+                verifyBtn.textContent = 'Verify KYC';
+            }
+        }
+        
+        function displayKYCResult(result) {
+            const resultDiv = document.getElementById('result');
+            let message = '';
+            let type = 'info';
+            
+            // Create source badge
+            const sourceBadge = `<span class="source-badge source-${result.source}">${result.source.replace('_', ' ')}</span>`;
+            
+            switch (result.status) {
+                case 'completed':
+                    message = `✅ ${result.message} ${sourceBadge}`;
+                    type = 'success';
+                    break;
+                case 'pending':
+                    message = `⏳ ${result.message} ${sourceBadge}`;
+                    type = 'warning';
+                    break;
+                case 'not_found':
+                    message = `❌ ${result.message} ${sourceBadge}`;
+                    type = 'error';
+                    break;
+                case 'error':
+                    message = `⚠️ ${result.message} ${sourceBadge}`;
+                    type = 'error';
+                    break;
+                default:
+                    message = `ℹ️ ${result.message} ${sourceBadge}`;
+                    type = 'info';
+            }
+            
+            // Add details if available
+            if (result.details) {
+                message += createDetailsHTML(result.details, result.source);
+            }
+            
+            showResult(message, type);
+        }
+        
+        function createDetailsHTML(details, source) {
+            let detailsHTML = '<div class="details-grid">';
+            
+            if (details.panNumber) {
+                detailsHTML += `<div class="detail-item"><span class="detail-label">PAN:</span> ${details.panNumber}</div>`;
+            }
+            
+            if (details.kycStatus) {
+                detailsHTML += `<div class="detail-item"><span class="detail-label">Status:</span> ${details.kycStatus}</div>`;
+            }
+            
+            if (details.verifiedAt) {
+                detailsHTML += `<div class="detail-item"><span class="detail-label">Verified:</span> ${new Date(details.verifiedAt).toLocaleString()}</div>`;
+            }
+            
+            if (details.source && source === 'external') {
+                detailsHTML += `<div class="detail-item"><span class="detail-label">Provider:</span> ${details.source}</div>`;
+            }
+            
+            if (details.userId) {
+                detailsHTML += `<div class="detail-item"><span class="detail-label">User ID:</span> ${details.userId}</div>`;
+            }
+            
+            if (details.storedInDatabase) {
+                detailsHTML += `<div class="detail-item"><span class="detail-label">Stored:</span> ✅ In Database</div>`;
+            }
+            
+            if (details.kycRecordId) {
+                detailsHTML += `<div class="detail-item"><span class="detail-label">Record ID:</span> ${details.kycRecordId}</div>`;
+            }
+            
+            detailsHTML += '</div>';
+            return detailsHTML;
+        }
+        
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = message;
+            resultDiv.className = `result ${type}`;
+            resultDiv.style.display = 'block';
+        }
+        
+        // Allow Enter key to submit
+        document.getElementById('panNumber').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                verifyKYC();
+            }
+        });
+        
+        // Auto-format PAN input
+        document.getElementById('panNumber').addEventListener('input', function(e) {
+            let value = e.target.value.toUpperCase();
+            // Remove non-alphanumeric characters
+            value = value.replace(/[^A-Z0-9]/g, '');
+            e.target.value = value;
+        });
+        
+        // Test with sample PANs
+        function testWithSamplePAN(pan) {
+            document.getElementById('panNumber').value = pan;
+            verifyKYC();
+        }
+        
+        // Add test buttons for demonstration
+        document.addEventListener('DOMContentLoaded', function() {
+            const testContainer = document.createElement('div');
+            testContainer.innerHTML = `
+                <div style="margin-top: 20px; text-align: center;">
+                    <h4>Test with Sample PANs:</h4>
+                    <button onclick="testWithSamplePAN('ABCDE1234F')" style="margin: 5px; padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Test Completed</button>
+                    <button onclick="testWithSamplePAN('FGHIJ5678K')" style="margin: 5px; padding: 8px 15px; background: #ffc107; color: #212529; border: none; border-radius: 4px; cursor: pointer;">Test Pending</button>
+                    <button onclick="testWithSamplePAN('LMNOP9012Q')" style="margin: 5px; padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Test Not Found</button>
+                </div>
+            `;
+            document.querySelector('.container').appendChild(testContainer);
+        });
+    </script>
+</body>
+</html>
