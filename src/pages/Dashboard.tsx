@@ -30,6 +30,8 @@ import { Footer } from "@/components/layout/Footer";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { useAuth } from "@/components/AuthProvider";
 import AdvisorPortfolioComparison from "@/components/AdvisorPortfolioComparison";
+import RiskProfiler from "@/components/RiskProfiler";
+import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
   const [showBalance, setShowBalance] = useState(true);
@@ -84,94 +86,60 @@ const Dashboard = () => {
 
   // Mandatory onboarding removed: users can explore even if profile incomplete.
 
-  const portfolioData = {
-    currentValue: 245750,
-    totalInvested: 218500,
-    totalGains: 27250,
-    gainsPercentage: 12.47,
-    todayChange: 1850,
-    todayChangePercentage: 0.76
-  };
+  // Dynamic data state
+  const [portfolioData, setPortfolioData] = useState<{ currentValue: number; totalInvested: number; totalGains: number; gainsPercentage: number; todayChange: number; todayChangePercentage: number } | null>(null);
+  const [holdings, setHoldings] = useState<any[]>([]);
+  const [goals, setGoals] = useState<any[]>([]);
+  const isOnboarded = useMemo(() => (userProfile as any)?.onboarding_status === 'COMPLETE', [userProfile]);
 
-  const holdings = [
-    {
-      name: "HDFC Top 100 Fund",
-      type: "Large Cap",
-      invested: 50000,
-      current: 58750,
-      gains: 8750,
-      gainsPercentage: 17.5,
-      units: 245.67,
-      nav: 239.15
-    },
-    {
-      name: "Axis Midcap Fund",
-      type: "Mid Cap",
-      invested: 40000,
-      current: 46200,
-      gains: 6200,
-      gainsPercentage: 15.5,
-      units: 189.23,
-      nav: 244.12
-    },
-    {
-      name: "ICICI Prudential Bluechip",
-      type: "Large Cap",
-      invested: 60000,
-      current: 65800,
-      gains: 5800,
-      gainsPercentage: 9.67,
-      units: 312.45,
-      nav: 210.56
-    },
-    {
-      name: "SBI Small Cap Fund",
-      type: "Small Cap",
-      invested: 35000,
-      current: 38500,
-      gains: 3500,
-      gainsPercentage: 10.0,
-      units: 156.78,
-      nav: 245.67
-    },
-    {
-      name: "UTI Nifty Index Fund",
-      type: "Index",
-      invested: 33500,
-      current: 36500,
-      gains: 3000,
-      gainsPercentage: 8.96,
-      units: 278.91,
-      nav: 130.89
-    }
-  ];
+  useEffect(() => {
+    const loadData = async () => {
+      if (!user) return;
+      // Fetch investments
+      const { data: investments } = await (supabase as any).from('user_investments').select('*').eq('user_id', user.id);
+      // Fetch goals
+      const { data: userGoals } = await (supabase as any).from('user_goals').select('*').eq('user_id', user.id);
 
-  const goals = [
-    {
-      name: "Emergency Fund",
-      target: 600000,
-      current: 245000,
-      progress: 40.83,
-      timeLeft: "8 months",
+      setHoldings(investments || []);
+      setGoals(userGoals || []);
+
+      if (investments && investments.length > 0) {
+        const totalInvested = investments.reduce((s: number, i: any) => s + Number(i.invested_amount || 0), 0);
+        // For demo: compute current as invested +/- 8% pseudo return
+        const currentValue = Math.round(totalInvested * 1.08);
+        const totalGains = currentValue - totalInvested;
+        const gainsPercentage = totalInvested ? (totalGains / totalInvested) * 100 : 0;
+        setPortfolioData({ currentValue, totalInvested, totalGains, gainsPercentage, todayChange: 0, todayChangePercentage: 0 });
+      } else {
+        setPortfolioData(null);
+      }
+    };
+    loadData();
+  }, [user]);
+
+  const derivedHoldings = useMemo(() => {
+    return holdings.map((inv: any) => ({
+      name: inv.scheme_code,
+      type: 'Mutual Fund',
+      invested: Number(inv.invested_amount || 0),
+      current: Math.round(Number(inv.invested_amount || 0) * 1.08),
+      gains: Math.round(Number(inv.invested_amount || 0) * 0.08),
+      gainsPercentage: 8.0,
+      units: Number(inv.units || 0),
+      nav: Number(inv.avg_nav || 0)
+    }));
+  }, [holdings]);
+
+  const derivedGoals = useMemo(() => {
+    return goals.map((g: any) => ({
+      name: g.name,
+      target: Number(g.target_amount || 0),
+      current: Number(g.current_amount || 0),
+      progress: Math.min(100, Number(g.target_amount) ? Number(g.current_amount) * 100 / Number(g.target_amount) : 0),
+      timeLeft: g.target_date ? `${Math.max(0, Math.ceil((new Date(g.target_date).getTime() - Date.now()) / (1000*60*60*24*30)))} months` : '—',
       icon: Shield
-    },
-    {
-      name: "House Down Payment",
-      target: 1500000,
-      current: 380000,
-      progress: 25.33,
-      timeLeft: "3 years",
-      icon: Target
-    },
-    {
-      name: "Child Education",
-      target: 2500000,
-      current: 125000,
-      progress: 5.0,
-      timeLeft: "12 years",
-      icon: Users
-    }
-  ];
+    }));
+  }, [goals]);
 
   const formatCurrency = (amount: number) => {
     if (!showBalance) return "₹ ****";
@@ -293,18 +261,30 @@ const Dashboard = () => {
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground mb-2">
-                {formatCurrency(portfolioData.currentValue)}
-              </div>
-              <div className="flex items-center space-x-4 text-sm">
-                <div className="flex items-center text-success">
-                  <ArrowUpRight className="h-4 w-4 mr-1" />
-                  <span>+{formatCurrency(portfolioData.totalGains)} ({portfolioData.gainsPercentage}%)</span>
+              {isOnboarded && portfolioData ? (
+                <>
+                  <div className="text-3xl font-bold text-foreground mb-2">
+                    {formatCurrency(portfolioData.currentValue)}
+                  </div>
+                  <div className="flex items-center space-x-4 text-sm">
+                    <div className="flex items-center text-success">
+                      <ArrowUpRight className="h-4 w-4 mr-1" />
+                      <span>+{formatCurrency(portfolioData.totalGains)} ({portfolioData.gainsPercentage.toFixed(2)}%)</span>
+                    </div>
+                    <div className="flex items-center text-muted-foreground">
+                      <span>Today: +{formatCurrency(portfolioData.todayChange)} ({portfolioData.todayChangePercentage}%)</span>
+                    </div>
+                  </div>
+                </>
+              ) : isOnboarded ? (
+                <div className="text-sm text-muted-foreground">
+                  No investments yet. <Link to="/funds" className="underline">Start your first investment</Link>.
                 </div>
-                <div className="flex items-center text-muted-foreground">
-                  <span>Today: +{formatCurrency(portfolioData.todayChange)} ({portfolioData.todayChangePercentage}%)</span>
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  Explore mode active. Complete your profile to see your live portfolio.
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
 
@@ -317,10 +297,18 @@ const Dashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-foreground">
-                  {formatCurrency(portfolioData.totalInvested)}
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">Click to view funds</p>
+                {isOnboarded && portfolioData ? (
+                  <>
+                    <div className="text-2xl font-bold text-foreground">
+                      {formatCurrency(portfolioData.totalInvested)}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">Click to view funds</p>
+                  </>
+                ) : isOnboarded ? (
+                  <p className="text-sm text-muted-foreground">No investments yet.</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Complete your profile to invest.</p>
+                )}
               </CardContent>
             </Card>
           </Link>
@@ -362,6 +350,13 @@ const Dashboard = () => {
             </motion.div>
           )}
 
+          {/* Risk Profiler in explore mode */}
+          {needsOnboarding && (
+            <motion.div className="lg:col-span-3" variants={itemVariants}>
+              <RiskProfiler />
+            </motion.div>
+          )}
+
           {/* Holdings */}
           <motion.div 
             className="lg:col-span-2"
@@ -375,8 +370,11 @@ const Dashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {holdings.map((holding, index) => (
+                {isOnboarded && derivedHoldings.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">No holdings yet. <Link to="/funds" className="underline">Explore funds</Link>.</div>
+                ) : (
+                  <div className="space-y-4">
+                  {(isOnboarded ? derivedHoldings : []).map((holding, index) => (
                     <motion.div 
                       key={index} 
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-all duration-200 card-hover"
@@ -414,6 +412,7 @@ const Dashboard = () => {
                     </motion.div>
                   ))}
                 </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
@@ -432,8 +431,11 @@ const Dashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {goals.map((goal, index) => {
+                {isOnboarded && derivedGoals.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">No goals yet. <Link to="/goals" className="underline">Create your first goal</Link>.</div>
+                ) : (
+                  <div className="space-y-4">
+                  {derivedGoals.map((goal, index) => {
                     const IconComponent = goal.icon;
                     return (
                       <motion.div 
@@ -455,6 +457,7 @@ const Dashboard = () => {
                     );
                   })}
                 </div>
+                )}
                 <Button variant="outline" className="w-full mt-4 micro-press" size="sm" asChild>
                   <Link to="/goals">
                     <Plus className="h-4 w-4 mr-2" />

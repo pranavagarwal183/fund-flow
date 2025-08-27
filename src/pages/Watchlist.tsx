@@ -287,6 +287,7 @@ const Watchlist = () => {
   const [error, setError] = useState("");
   const [selectedFund, setSelectedFund] = useState<any | null>(null);
   const [bookmarkedFunds, setBookmarkedFunds] = useState<Set<string>>(new Set());
+  const [liveData, setLiveData] = useState<Record<string, any>>({});
 
   // 🔄 Fetch all funds from Supabase on component mount
   useEffect(() => {
@@ -403,42 +404,21 @@ const Watchlist = () => {
     }
 
     try {
-      if (bookmarkedFunds.has(fundName)) {
-        // Remove from watchlist
-        const { error } = await supabase
-          .from('watchlists')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('scheme_id', fundName); // Using fundName as identifier for now
-
-        if (!error) {
-          setBookmarkedFunds(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(fundName);
-            return newSet;
-          });
-          toast({
-            title: "Removed from Watchlist",
-            description: "Fund has been removed from your watchlist.",
-          });
+      const newSet = new Set(bookmarkedFunds);
+      if (newSet.has(fundName)) newSet.delete(fundName); else newSet.add(fundName);
+      setBookmarkedFunds(newSet);
+      const scheme_codes = Array.from(newSet);
+      await supabase.from('watchlist').upsert({ user_id: user.id, scheme_codes, updated_at: new Date().toISOString() });
+      toast({ title: 'Watchlist updated' });
+      if (scheme_codes.length > 0) {
+        const { data, error } = await supabase.functions.invoke('fetch-market-data', { body: { scheme_codes } });
+        if (!error && data?.data) {
+          const map: Record<string, any> = {};
+          for (const item of data.data) map[item.scheme_code] = item;
+          setLiveData(map);
         }
       } else {
-        // Add to watchlist
-        const { error } = await supabase
-          .from('watchlists')
-          .insert({
-            user_id: user.id,
-            scheme_id: fundName, // Using fundName as identifier for now
-            price_alert_enabled: false
-          });
-
-        if (!error) {
-          setBookmarkedFunds(prev => new Set(prev).add(fundName));
-          toast({
-            title: "Added to Watchlist",
-            description: "Fund has been added to your watchlist.",
-          });
-        }
+        setLiveData({});
       }
     } catch (error) {
       console.error('Error updating watchlist:', error);
@@ -450,25 +430,25 @@ const Watchlist = () => {
     }
   };
 
-  // Load user's bookmarked funds on component mount
+  // Load user's watchlist and fetch live data
   useEffect(() => {
-    if (user) {
-      const loadBookmarks = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('watchlists')
-            .select('scheme_id')
-            .eq('user_id', user.id);
-
-          if (!error && data) {
-            setBookmarkedFunds(new Set(data.map(item => item.scheme_id)));
-          }
-        } catch (error) {
-          console.error('Error loading bookmarks:', error);
+    if (!user) return;
+    const loadAndFetch = async () => {
+      const { data: wl } = await supabase.from('watchlist').select('scheme_codes').eq('user_id', user.id).maybeSingle();
+      const codes: string[] = wl?.scheme_codes || [];
+      setBookmarkedFunds(new Set(codes));
+      if (codes.length > 0) {
+        const { data, error } = await supabase.functions.invoke('fetch-market-data', { body: { scheme_codes: codes } });
+        if (!error && data?.data) {
+          const map: Record<string, any> = {};
+          for (const item of data.data) map[item.scheme_code] = item;
+          setLiveData(map);
         }
-      };
-      loadBookmarks();
-    }
+      } else {
+        setLiveData({});
+      }
+    };
+    loadAndFetch();
   }, [user]);
 
   return (
@@ -542,36 +522,28 @@ const Watchlist = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {displayFunds.map((fund: any, i) => (
-                          <TableRow key={fund.basic_info?.fund_name || i}>
-                            <TableCell className="font-medium">{fund.basic_info?.fund_name || "N/A"}</TableCell>
-                            <TableCell>₹{fund.nav_info?.current_nav?.toFixed(2) || "N/A"}</TableCell>
-                            <TableCell>{formatChange(fund.returns?.absolute?.["1y"])}</TableCell>
-                            <TableCell>{fund.expense_ratio?.current?.toFixed(2) || "N/A"}%</TableCell>
-                            <TableCell>
-                                {fund.basic_info?.fund_size ? `₹${(fund.basic_info.fund_size / 10000000).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Cr` : "N/A"}
-                            </TableCell>
-                            <TableCell>
-                              <Button 
-                                size="sm" 
-                                variant="ghost" 
-                                onClick={() => handleBookmarkToggle(fund.basic_info?.fund_name || "")}
-                                className="p-2"
-                              >
-                                {bookmarkedFunds.has(fund.basic_info?.fund_name || "") ? (
-                                  <Bookmark className="h-4 w-4 text-blue-600 fill-current" />
-                                ) : (
-                                  <BookmarkPlus className="h-4 w-4 text-gray-400" />
-                                )}
-                              </Button>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button size="sm" variant="outline" onClick={() => setSelectedFund(fund)}>
-                                <Eye className="h-4 w-4 mr-1" /> View Details
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {Array.from(bookmarkedFunds).map(code => {
+                          const item = liveData[code];
+                          return (
+                            <TableRow key={code}>
+                              <TableCell className="font-medium">{item?.fund_name || code}</TableCell>
+                              <TableCell>₹{item?.metrics?.nav?.toFixed(2) ?? '—'}</TableCell>
+                              <TableCell>{formatChange(item?.metrics?.return_1y)}</TableCell>
+                              <TableCell>{item?.metrics?.return_3y?.toFixed(2) ?? '—'}%</TableCell>
+                              <TableCell>—</TableCell>
+                              <TableCell>
+                                <Button size="sm" variant="ghost" onClick={() => handleBookmarkToggle(code)} className="p-2">
+                                  <Bookmark className="h-4 w-4 text-blue-600" />
+                                </Button>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button size="sm" variant="outline">
+                                  Invest Now
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
