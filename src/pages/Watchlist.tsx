@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import axios from "axios";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -8,21 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Eye, X, Info, Wallet, BarChart, Percent, Calendar, Shield, Bookmark, BookmarkPlus, Loader2 } from "lucide-react";
+import { Search, X, Info, Wallet, BarChart, Percent, Calendar, Shield, Bookmark, Loader2 } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-// --- Define initialFundNames OUTSIDE the component ---
-// This array is now only created once when the module loads,
-// ensuring a stable reference for useCallback/useEffect dependencies.
-const INITIAL_FUND_NAMES = [
-  "ICICI Prudential Bluechip Fund Direct Growth",
-  "Axis Small Cap Fund Direct Growth",
-  "Mirae Asset Large Cap Fund Direct Growth",
-  "Parag Parikh Flexi Cap Fund Direct Growth",
-  "SBI Equity Hybrid Fund Direct Growth"
-];
+// (removed unused INITIAL_FUND_NAMES)
 
 // --- Fund interface for local data structure ---
 interface LocalFund {
