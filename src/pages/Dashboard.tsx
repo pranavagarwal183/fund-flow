@@ -30,13 +30,14 @@ import { Footer } from "@/components/layout/Footer";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { useAuth } from "@/components/AuthProvider";
 import AdvisorPortfolioComparison from "@/components/AdvisorPortfolioComparison";
-import RiskProfiler from "@/components/RiskProfiler";
+import { RiskProfiler } from "@/components/RiskProfiler";
 import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
   const [showBalance, setShowBalance] = useState(true);
   const { user, userProfile, loading, refreshProfile } = useAuth();
   const needsOnboarding = useMemo(() => {
+    if (!userProfile) return true;
     const status = (userProfile as any)?.onboarding_status as string | undefined;
     return !!(status && !['COMPLETE'].includes(status));
   }, [userProfile]);
@@ -86,60 +87,51 @@ const Dashboard = () => {
 
   // Mandatory onboarding removed: users can explore even if profile incomplete.
 
-  // Dynamic data state
-  const [portfolioData, setPortfolioData] = useState<{ currentValue: number; totalInvested: number; totalGains: number; gainsPercentage: number; todayChange: number; todayChangePercentage: number } | null>(null);
-  const [holdings, setHoldings] = useState<any[]>([]);
-  const [goals, setGoals] = useState<any[]>([]);
-  const isOnboarded = useMemo(() => (userProfile as any)?.onboarding_status === 'COMPLETE', [userProfile]);
+  // Use static data for now until database is populated
+  const portfolioData = {
+    currentValue: 245750,
+    totalInvested: 218500,
+    totalGains: 27250,
+    gainsPercentage: 12.47,
+    todayChange: 1850,
+    todayChangePercentage: 0.76
+  };
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (!user) return;
-      // Fetch investments
-      const { data: investments } = await (supabase as any).from('user_investments').select('*').eq('user_id', user.id);
-      // Fetch goals
-      const { data: userGoals } = await (supabase as any).from('user_goals').select('*').eq('user_id', user.id);
+  const holdings = [
+    {
+      name: "HDFC Top 100 Fund",
+      type: "Large Cap",
+      invested: 50000,
+      current: 58750,
+      gains: 8750,
+      gainsPercentage: 17.5,
+      units: 245.67,
+      nav: 239.15
+    },
+    {
+      name: "Axis Midcap Fund",
+      type: "Mid Cap",
+      invested: 40000,
+      current: 46200,
+      gains: 6200,
+      gainsPercentage: 15.5,
+      units: 189.23,
+      nav: 244.12
+    },
+  ];
 
-      setHoldings(investments || []);
-      setGoals(userGoals || []);
-
-      if (investments && investments.length > 0) {
-        const totalInvested = investments.reduce((s: number, i: any) => s + Number(i.invested_amount || 0), 0);
-        // For demo: compute current as invested +/- 8% pseudo return
-        const currentValue = Math.round(totalInvested * 1.08);
-        const totalGains = currentValue - totalInvested;
-        const gainsPercentage = totalInvested ? (totalGains / totalInvested) * 100 : 0;
-        setPortfolioData({ currentValue, totalInvested, totalGains, gainsPercentage, todayChange: 0, todayChangePercentage: 0 });
-      } else {
-        setPortfolioData(null);
-      }
-    };
-    loadData();
-  }, [user]);
-
-  const derivedHoldings = useMemo(() => {
-    return holdings.map((inv: any) => ({
-      name: inv.scheme_code,
-      type: 'Mutual Fund',
-      invested: Number(inv.invested_amount || 0),
-      current: Math.round(Number(inv.invested_amount || 0) * 1.08),
-      gains: Math.round(Number(inv.invested_amount || 0) * 0.08),
-      gainsPercentage: 8.0,
-      units: Number(inv.units || 0),
-      nav: Number(inv.avg_nav || 0)
-    }));
-  }, [holdings]);
-
-  const derivedGoals = useMemo(() => {
-    return goals.map((g: any) => ({
-      name: g.name,
-      target: Number(g.target_amount || 0),
-      current: Number(g.current_amount || 0),
-      progress: Math.min(100, Number(g.target_amount) ? Number(g.current_amount) * 100 / Number(g.target_amount) : 0),
-      timeLeft: g.target_date ? `${Math.max(0, Math.ceil((new Date(g.target_date).getTime() - Date.now()) / (1000*60*60*24*30)))} months` : '—',
+  const goals = [
+    {
+      name: "Emergency Fund",
+      target: 600000,
+      current: 245000,
+      progress: 40.83,
+      timeLeft: "8 months",
       icon: Shield
-    }));
-  }, [goals]);
+    },
+  ];
+
+  const isOnboarded = useMemo(() => (userProfile as any)?.onboarding_status === 'COMPLETE', [userProfile]);
 
   const formatCurrency = (amount: number) => {
     if (!showBalance) return "₹ ****";
@@ -261,30 +253,18 @@ const Dashboard = () => {
               </Button>
             </CardHeader>
             <CardContent>
-              {isOnboarded && portfolioData ? (
-                <>
-                  <div className="text-3xl font-bold text-foreground mb-2">
-                    {formatCurrency(portfolioData.currentValue)}
-                  </div>
-                  <div className="flex items-center space-x-4 text-sm">
-                    <div className="flex items-center text-success">
-                      <ArrowUpRight className="h-4 w-4 mr-1" />
-                      <span>+{formatCurrency(portfolioData.totalGains)} ({portfolioData.gainsPercentage.toFixed(2)}%)</span>
-                    </div>
-                    <div className="flex items-center text-muted-foreground">
-                      <span>Today: +{formatCurrency(portfolioData.todayChange)} ({portfolioData.todayChangePercentage}%)</span>
-                    </div>
-                  </div>
-                </>
-              ) : isOnboarded ? (
-                <div className="text-sm text-muted-foreground">
-                  No investments yet. <Link to="/funds" className="underline">Start your first investment</Link>.
+              <div className="text-3xl font-bold text-foreground mb-2">
+                {formatCurrency(portfolioData.currentValue)}
+              </div>
+              <div className="flex items-center space-x-4 text-sm">
+                <div className="flex items-center text-success">
+                  <ArrowUpRight className="h-4 w-4 mr-1" />
+                  <span>+{formatCurrency(portfolioData.totalGains)} ({portfolioData.gainsPercentage}%)</span>
                 </div>
-              ) : (
-                <div className="text-sm text-muted-foreground">
-                  Explore mode active. Complete your profile to see your live portfolio.
+                <div className="flex items-center text-muted-foreground">
+                  <span>Today: +{formatCurrency(portfolioData.todayChange)} ({portfolioData.todayChangePercentage}%)</span>
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
 
@@ -297,18 +277,10 @@ const Dashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {isOnboarded && portfolioData ? (
-                  <>
-                    <div className="text-2xl font-bold text-foreground">
-                      {formatCurrency(portfolioData.totalInvested)}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">Click to view funds</p>
-                  </>
-                ) : isOnboarded ? (
-                  <p className="text-sm text-muted-foreground">No investments yet.</p>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Complete your profile to invest.</p>
-                )}
+                <div className="text-2xl font-bold text-foreground">
+                  {formatCurrency(portfolioData.totalInvested)}
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">Click to view funds</p>
               </CardContent>
             </Card>
           </Link>
@@ -342,21 +314,22 @@ const Dashboard = () => {
           </Link>
         </motion.div>
 
+        {/* Risk Profiling Widget for Explorer Mode */}
+        {needsOnboarding && welcomeDismissed && (
+          <motion.div className="mb-6" variants={itemVariants}>
+            <Card className="shadow-soft">
+              <CardHeader>
+                <CardTitle className="text-xl">Complete Your Risk Profile</CardTitle>
+                <p className="text-muted-foreground">Help us understand your investment preferences with a quick assessment</p>
+              </CardHeader>
+              <CardContent>
+                <RiskProfiler onComplete={() => {}} />
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Intrigue Widget: Advisor vs Self-Managed Portfolio for users not onboarded */}
-          {needsOnboarding && (
-            <motion.div className="lg:col-span-3" variants={itemVariants}>
-              <AdvisorPortfolioComparison onStartOnboarding={openOnboarding} />
-            </motion.div>
-          )}
-
-          {/* Risk Profiler in explore mode */}
-          {needsOnboarding && (
-            <motion.div className="lg:col-span-3" variants={itemVariants}>
-              <RiskProfiler />
-            </motion.div>
-          )}
-
           {/* Holdings */}
           <motion.div 
             className="lg:col-span-2"
@@ -370,11 +343,8 @@ const Dashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {isOnboarded && derivedHoldings.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">No holdings yet. <Link to="/funds" className="underline">Explore funds</Link>.</div>
-                ) : (
-                  <div className="space-y-4">
-                  {(isOnboarded ? derivedHoldings : []).map((holding, index) => (
+                <div className="space-y-4">
+                  {holdings.map((holding, index) => (
                     <motion.div 
                       key={index} 
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-all duration-200 card-hover"
@@ -412,7 +382,6 @@ const Dashboard = () => {
                     </motion.div>
                   ))}
                 </div>
-                )}
               </CardContent>
             </Card>
           </motion.div>
@@ -431,11 +400,8 @@ const Dashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {isOnboarded && derivedGoals.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">No goals yet. <Link to="/goals" className="underline">Create your first goal</Link>.</div>
-                ) : (
-                  <div className="space-y-4">
-                  {derivedGoals.map((goal, index) => {
+                <div className="space-y-4">
+                  {goals.map((goal, index) => {
                     const IconComponent = goal.icon;
                     return (
                       <motion.div 
@@ -457,7 +423,6 @@ const Dashboard = () => {
                     );
                   })}
                 </div>
-                )}
                 <Button variant="outline" className="w-full mt-4 micro-press" size="sm" asChild>
                   <Link to="/goals">
                     <Plus className="h-4 w-4 mr-2" />

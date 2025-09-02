@@ -1,308 +1,348 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/components/AuthProvider";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle, TrendingUp, Shield, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { BarChartHorizontal, Zap, Shield, Target, TrendingUp } from "lucide-react";
+import { useAuth } from "./AuthProvider";
+import { toast } from "sonner";
 
-const QUESTIONS = [
+const riskAssessmentSchema = z.object({
+  age: z.string().min(1, "Please select your age group"),
+  income: z.string().min(1, "Please select your income range"),
+  experience: z.string().min(1, "Please select your investment experience"),
+  horizon: z.string().min(1, "Please select your investment horizon"),
+  risk_tolerance: z.string().min(1, "Please select your risk tolerance"),
+  loss_reaction: z.string().min(1, "Please select how you'd react to losses"),
+});
+
+type RiskAssessmentData = z.infer<typeof riskAssessmentSchema>;
+
+const questions = [
   {
-    id: 'horizon',
-    question: 'What is your investment time horizon?',
+    id: "age",
+    title: "What is your age group?",
     options: [
-      { value: 'A', label: 'Less than 3 years', score: 1 },
-      { value: 'B', label: '3-5 years', score: 2 },
-      { value: 'C', label: '5-10 years', score: 3 },
-      { value: 'D', label: '10-20 years', score: 4 },
-      { value: 'E', label: 'More than 20 years', score: 5 }
+      { value: "under_25", label: "Under 25", score: 5 },
+      { value: "25_35", label: "25-35", score: 4 },
+      { value: "36_45", label: "36-45", score: 3 },
+      { value: "46_55", label: "46-55", score: 2 },
+      { value: "over_55", label: "Over 55", score: 1 },
     ]
   },
   {
-    id: 'reaction',
-    question: 'How would you react if your portfolio dropped 20% in a month?',
+    id: "income",
+    title: "What is your annual income range?",
     options: [
-      { value: 'A', label: 'Sell everything immediately', score: 1 },
-      { value: 'B', label: 'Sell some investments', score: 2 },
-      { value: 'C', label: 'Hold and wait', score: 3 },
-      { value: 'D', label: 'Buy more at lower prices', score: 4 },
-      { value: 'E', label: 'Significantly increase my investment', score: 5 }
+      { value: "under_5", label: "Under ₹5 Lakhs", score: 1 },
+      { value: "5_10", label: "₹5-10 Lakhs", score: 2 },
+      { value: "10_25", label: "₹10-25 Lakhs", score: 3 },
+      { value: "25_50", label: "₹25-50 Lakhs", score: 4 },
+      { value: "over_50", label: "Over ₹50 Lakhs", score: 5 },
     ]
   },
   {
-    id: 'income',
-    question: 'What percentage of your monthly income can you comfortably invest?',
+    id: "experience",
+    title: "How experienced are you with investments?",
     options: [
-      { value: 'A', label: 'Less than 5%', score: 1 },
-      { value: 'B', label: '5-10%', score: 2 },
-      { value: 'C', label: '10-20%', score: 3 },
-      { value: 'D', label: '20-30%', score: 4 },
-      { value: 'E', label: 'More than 30%', score: 5 }
+      { value: "beginner", label: "Beginner - No prior experience", score: 1 },
+      { value: "basic", label: "Basic - Some FD/RD experience", score: 2 },
+      { value: "moderate", label: "Moderate - Mutual funds experience", score: 3 },
+      { value: "experienced", label: "Experienced - Stocks & MFs", score: 4 },
+      { value: "expert", label: "Expert - All asset classes", score: 5 },
     ]
   },
   {
-    id: 'goal',
-    question: 'What is your primary investment goal?',
+    id: "horizon",
+    title: "What is your investment time horizon?",
     options: [
-      { value: 'A', label: 'Capital preservation', score: 1 },
-      { value: 'B', label: 'Steady income', score: 2 },
-      { value: 'C', label: 'Balanced growth', score: 3 },
-      { value: 'D', label: 'Capital appreciation', score: 4 },
-      { value: 'E', label: 'Maximum growth', score: 5 }
+      { value: "short", label: "Less than 1 year", score: 1 },
+      { value: "medium_short", label: "1-3 years", score: 2 },
+      { value: "medium", label: "3-5 years", score: 3 },
+      { value: "long", label: "5-10 years", score: 4 },
+      { value: "very_long", label: "More than 10 years", score: 5 },
     ]
   },
   {
-    id: 'experience',
-    question: 'What is your experience level with investments?',
+    id: "risk_tolerance",
+    title: "Which investment approach suits you best?",
     options: [
-      { value: 'A', label: 'No experience', score: 1 },
-      { value: 'B', label: 'Beginner (1-2 years)', score: 2 },
-      { value: 'C', label: 'Intermediate (3-5 years)', score: 3 },
-      { value: 'D', label: 'Advanced (5-10 years)', score: 4 },
-      { value: 'E', label: 'Expert (10+ years)', score: 5 }
+      { value: "safety", label: "Safety first - Preserve capital", score: 1 },
+      { value: "conservative", label: "Conservative - Steady growth", score: 2 },
+      { value: "balanced", label: "Balanced - Moderate growth", score: 3 },
+      { value: "growth", label: "Growth - Higher returns", score: 4 },
+      { value: "aggressive", label: "Aggressive - Maximum returns", score: 5 },
     ]
   },
   {
-    id: 'knowledge',
-    question: 'How would you rate your knowledge of financial markets?',
+    id: "loss_reaction",
+    title: "How would you react to a 20% loss in your portfolio?",
     options: [
-      { value: 'A', label: 'Very limited', score: 1 },
-      { value: 'B', label: 'Basic understanding', score: 2 },
-      { value: 'C', label: 'Moderate knowledge', score: 3 },
-      { value: 'D', label: 'Good understanding', score: 4 },
-      { value: 'E', label: 'Expert level', score: 5 }
-    ]
-  },
-  {
-    id: 'volatility',
-    question: 'How comfortable are you with investment volatility?',
-    options: [
-      { value: 'A', label: 'Very uncomfortable', score: 1 },
-      { value: 'B', label: 'Somewhat uncomfortable', score: 2 },
-      { value: 'C', label: 'Neutral', score: 3 },
-      { value: 'D', label: 'Somewhat comfortable', score: 4 },
-      { value: 'E', label: 'Very comfortable', score: 5 }
-    ]
-  },
-  {
-    id: 'emergency',
-    question: 'Do you have an emergency fund covering 6+ months of expenses?',
-    options: [
-      { value: 'A', label: 'No emergency fund', score: 1 },
-      { value: 'B', label: 'Less than 3 months', score: 2 },
-      { value: 'C', label: '3-6 months', score: 3 },
-      { value: 'D', label: '6-12 months', score: 4 },
-      { value: 'E', label: 'More than 12 months', score: 5 }
-    ]
-  },
-  {
-    id: 'debt',
-    question: 'What is your current debt situation?',
-    options: [
-      { value: 'A', label: 'High debt burden', score: 1 },
-      { value: 'B', label: 'Moderate debt', score: 2 },
-      { value: 'C', label: 'Low debt', score: 3 },
-      { value: 'D', label: 'Minimal debt', score: 4 },
-      { value: 'E', label: 'No debt', score: 5 }
-    ]
-  },
-  {
-    id: 'diversification',
-    question: 'How important is portfolio diversification to you?',
-    options: [
-      { value: 'A', label: 'Not important', score: 1 },
-      { value: 'B', label: 'Somewhat important', score: 2 },
-      { value: 'C', label: 'Important', score: 3 },
-      { value: 'D', label: 'Very important', score: 4 },
-      { value: 'E', label: 'Extremely important', score: 5 }
+      { value: "panic", label: "Panic and sell immediately", score: 1 },
+      { value: "worried", label: "Very worried, consider selling", score: 2 },
+      { value: "concerned", label: "Concerned but hold", score: 3 },
+      { value: "calm", label: "Stay calm, review strategy", score: 4 },
+      { value: "opportunity", label: "See it as buying opportunity", score: 5 },
     ]
   }
 ];
 
-const RISK_PROFILES = {
-  conservative: {
-    title: 'Conservative',
-    description: 'You prefer capital preservation over growth. Your investments focus on stability and steady, modest returns.',
-    icon: Shield,
-    color: 'text-blue-500',
-    allocation: {
-      equity: 20,
-      debt: 60,
-      gold: 15,
-      cash: 5
-    }
-  },
-  moderatelyConservative: {
-    title: 'Moderately Conservative',
-    description: 'You seek a balance between safety and growth, preferring moderate risk for steady returns.',
-    icon: BarChartHorizontal,
-    color: 'text-cyan-500',
-    allocation: {
-      equity: 35,
-      debt: 50,
-      gold: 10,
-      cash: 5
-    }
-  },
-  balanced: {
-    title: 'Balanced',
-    description: 'You maintain an equal balance between growth and stability, suitable for medium-term goals.',
-    icon: Target,
-    color: 'text-green-500',
-    allocation: {
-      equity: 50,
-      debt: 35,
-      gold: 10,
-      cash: 5
-    }
-  },
-  growth: {
-    title: 'Growth',
-    description: 'You prioritize capital appreciation and are comfortable with higher volatility for better returns.',
-    icon: TrendingUp,
-    color: 'text-orange-500',
-    allocation: {
-      equity: 70,
-      debt: 20,
-      gold: 5,
-      cash: 5
-    }
-  },
-  aggressiveGrowth: {
-    title: 'Aggressive Growth',
-    description: 'You seek maximum returns and are comfortable with high volatility and risk.',
-    icon: Zap,
-    color: 'text-red-500',
-    allocation: {
-      equity: 85,
-      debt: 10,
-      gold: 3,
-      cash: 2
-    }
-  }
+const getRiskProfile = (score: number) => {
+  if (score <= 10) return { category: "Conservative", color: "bg-blue-500", allocation: { equity: 20, debt: 75, gold: 5 } };
+  if (score <= 15) return { category: "Moderate Conservative", color: "bg-green-500", allocation: { equity: 35, debt: 60, gold: 5 } };
+  if (score <= 20) return { category: "Balanced", color: "bg-yellow-500", allocation: { equity: 50, debt: 45, gold: 5 } };
+  if (score <= 25) return { category: "Moderate Aggressive", color: "bg-orange-500", allocation: { equity: 70, debt: 25, gold: 5 } };
+  return { category: "Aggressive", color: "bg-red-500", allocation: { equity: 85, debt: 10, gold: 5 } };
 };
 
-export default function RiskProfiler() {
+interface RiskProfilerProps {
+  onComplete?: (profile: any) => void;
+}
+
+export const RiskProfiler = ({ onComplete }: RiskProfilerProps) => {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [finalProfile, setFinalProfile] = useState<any>(null);
   const { user } = useAuth();
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const allAnswered = useMemo(() => QUESTIONS.every(q => answers[q.id]), [answers]);
 
-  const calculateProfile = useMemo(() => {
-    if (!allAnswered) return null;
-    
-    const totalScore = QUESTIONS.reduce((acc, q) => {
-      const answer = answers[q.id];
-      const option = q.options.find(opt => opt.value === answer);
-      return acc + (option?.score || 0);
-    }, 0);
+  const form = useForm<RiskAssessmentData>({
+    resolver: zodResolver(riskAssessmentSchema),
+  });
 
-    if (totalScore <= 20) return 'conservative';
-    if (totalScore <= 30) return 'moderatelyConservative';
-    if (totalScore <= 40) return 'balanced';
-    if (totalScore <= 50) return 'growth';
-    return 'aggressiveGrowth';
-  }, [answers, allAnswered]);
-
-  const saveProfile = async () => {
-    if (!user || !calculateProfile) return;
-    try {
-      setSubmitting(true);
-      await supabase.from('user_profiles').update({ 
-        risk_profile: calculateProfile, 
-        updated_at: new Date().toISOString() 
-      }).eq('id', user.id);
-      setShowResults(true);
-    } catch (error) {
-      console.error('Error saving risk profile:', error);
-    } finally {
-      setSubmitting(false);
+  const handleNext = () => {
+    if (currentStep < questions.length - 1) {
+      setCurrentStep(currentStep + 1);
     }
   };
 
-  const resetProfile = () => {
-    setAnswers({});
-    setShowResults(false);
+  const handlePrevious = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
   };
 
-  if (showResults && calculateProfile) {
-    const profile = RISK_PROFILES[calculateProfile as keyof typeof RISK_PROFILES];
-    const IconComponent = profile.icon;
-    
+  const onSubmit = async (data: RiskAssessmentData) => {
+    if (!user) return;
+
+    setIsSubmitting(true);
+    try {
+      // Calculate risk score
+      const totalScore = questions.reduce((sum, question) => {
+        const answer = data[question.id as keyof RiskAssessmentData];
+        const option = question.options.find(opt => opt.value === answer);
+        return sum + (option?.score || 0);
+      }, 0);
+
+      const riskProfile = getRiskProfile(totalScore);
+      
+      // Save to database
+      const { error } = await supabase
+        .from('risk_assessments')
+        .upsert({
+          user_id: user.id,
+          responses: data,
+          risk_score: totalScore,
+          risk_category: riskProfile.category,
+          recommended_equity_allocation: riskProfile.allocation.equity,
+          recommended_debt_allocation: riskProfile.allocation.debt,
+          recommended_gold_allocation: riskProfile.allocation.gold,
+          valid_until: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Valid for 1 year
+        });
+
+      if (error) throw error;
+
+      // Update user profile with risk category
+      await supabase
+        .from('user_profiles')
+        .update({
+          risk_profile: riskProfile.category,
+          risk_category: riskProfile.category,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+
+      setFinalProfile({ ...riskProfile, score: totalScore });
+      setIsCompleted(true);
+      toast.success("Risk profile assessment completed!");
+      
+      setTimeout(() => {
+        onComplete?.({ ...riskProfile, score: totalScore });
+      }, 2000);
+    } catch (error) {
+      console.error('Error saving risk assessment:', error);
+      toast.error("Failed to save risk assessment. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const progress = ((currentStep + 1) / questions.length) * 100;
+  const currentQuestion = questions[currentStep];
+
+  if (isCompleted && finalProfile) {
     return (
-      <Card className="shadow-soft">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <IconComponent className={`h-5 w-5 ${profile.color}`} />
-            Your Risk Profile: {profile.title}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <p className="text-muted-foreground">{profile.description}</p>
-          
-          <div className="space-y-4">
-            <h4 className="font-medium">Recommended Asset Allocation</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-3 rounded-lg border bg-muted/30">
-                <div className="text-2xl font-bold text-blue-600">{profile.allocation.equity}%</div>
-                <div className="text-sm text-muted-foreground">Equity</div>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="max-w-2xl mx-auto"
+      >
+        <Card className="shadow-elegant">
+          <CardHeader className="text-center">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring" }}
+            >
+              <CheckCircle className="w-16 h-16 text-success mx-auto mb-4" />
+            </motion.div>
+            <CardTitle className="text-2xl text-foreground">Assessment Complete!</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6 text-center">
+            <div className="space-y-4">
+              <Badge className={`${finalProfile.color} text-white text-lg px-6 py-2`}>
+                {finalProfile.category} Investor
+              </Badge>
+              <p className="text-muted-foreground">
+                Based on your responses, we've identified your investment profile.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <TrendingUp className="w-8 h-8 text-primary mx-auto" />
+                <h4 className="font-semibold">Equity</h4>
+                <div className="text-2xl font-bold text-primary">{finalProfile.allocation.equity}%</div>
               </div>
-              <div className="text-center p-3 rounded-lg border bg-muted/30">
-                <div className="text-2xl font-bold text-green-600">{profile.allocation.debt}%</div>
-                <div className="text-sm text-muted-foreground">Debt</div>
+              <div className="space-y-2">
+                <Shield className="w-8 h-8 text-secondary mx-auto" />
+                <h4 className="font-semibold">Debt</h4>
+                <div className="text-2xl font-bold text-secondary">{finalProfile.allocation.debt}%</div>
               </div>
-              <div className="text-center p-3 rounded-lg border bg-muted/30">
-                <div className="text-2xl font-bold text-yellow-600">{profile.allocation.gold}%</div>
-                <div className="text-sm text-muted-foreground">Gold</div>
-              </div>
-              <div className="text-center p-3 rounded-lg border bg-muted/30">
-                <div className="text-2xl font-bold text-gray-600">{profile.allocation.cash}%</div>
-                <div className="text-sm text-muted-foreground">Cash</div>
+              <div className="space-y-2">
+                <Target className="w-8 h-8 text-yellow-500 mx-auto" />
+                <h4 className="font-semibold">Gold</h4>
+                <div className="text-2xl font-bold text-yellow-500">{finalProfile.allocation.gold}%</div>
               </div>
             </div>
-          </div>
 
-          <div className="flex gap-3">
-            <Button onClick={resetProfile} variant="outline" className="flex-1">
-              Retake Assessment
-            </Button>
-            <Button className="flex-1">
-              View Recommended Funds
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            <p className="text-sm text-muted-foreground">
+              This assessment is valid for one year and helps us recommend suitable investment options for you.
+            </p>
+          </CardContent>
+        </Card>
+      </motion.div>
     );
   }
 
   return (
-    <Card className="shadow-soft">
-      <CardHeader>
-        <CardTitle className="text-lg">Discover Your Investing Style</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {QUESTIONS.map(q => (
-          <div key={q.id} className="space-y-3">
-            <div className="font-medium text-foreground">{q.question}</div>
-            <RadioGroup value={answers[q.id]} onValueChange={(v) => setAnswers(prev => ({ ...prev, [q.id]: v }))}>
-              {q.options.map(option => (
-                <div className="flex items-center space-x-2" key={option.value}>
-                  <RadioGroupItem value={option.value} id={`${q.id}-${option.value}`} />
-                  <Label htmlFor={`${q.id}-${option.value}`}>{option.label}</Label>
-                </div>
-              ))}
-            </RadioGroup>
+    <div className="max-w-2xl mx-auto">
+      <Card className="shadow-elegant">
+        <CardHeader>
+          <CardTitle className="flex items-center text-xl">
+            <Target className="w-6 w-6 mr-3 text-primary" />
+            Risk Profile Assessment
+          </CardTitle>
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>Question {currentStep + 1} of {questions.length}</span>
+              <span>{Math.round(progress)}% Complete</span>
+            </div>
+            <Progress value={progress} className="h-2" />
           </div>
-        ))}
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentStep}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <FormField
+                    control={form.control}
+                    name={currentQuestion.id as keyof RiskAssessmentData}
+                    render={({ field }) => (
+                      <FormItem className="space-y-4">
+                        <FormLabel className="text-lg font-semibold text-foreground">
+                          {currentQuestion.title}
+                        </FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            className="space-y-3"
+                          >
+                            {currentQuestion.options.map((option) => (
+                              <motion.div
+                                key={option.value}
+                                className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                              >
+                                <RadioGroupItem value={option.value} id={option.value} />
+                                <Label 
+                                  htmlFor={option.value} 
+                                  className="flex-1 cursor-pointer text-sm"
+                                >
+                                  {option.label}
+                                </Label>
+                              </motion.div>
+                            ))}
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </motion.div>
+              </AnimatePresence>
 
-        <Button disabled={!allAnswered || submitting} onClick={saveProfile} className="micro-press w-full">
-          {submitting ? 'Saving…' : 'Complete Assessment'}
-        </Button>
-      </CardContent>
-    </Card>
+              <div className="flex justify-between pt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handlePrevious}
+                  disabled={currentStep === 0}
+                  className="micro-press"
+                >
+                  Previous
+                </Button>
+
+                {currentStep === questions.length - 1 ? (
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="bg-gradient-primary micro-press"
+                  >
+                    {isSubmitting ? "Calculating..." : "Complete Assessment"}
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={!form.watch(currentQuestion.id as keyof RiskAssessmentData)}
+                    className="bg-gradient-primary micro-press"
+                  >
+                    Next
+                  </Button>
+                )}
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    </div>
   );
-}
-
-
+};

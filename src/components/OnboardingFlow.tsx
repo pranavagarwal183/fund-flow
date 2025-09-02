@@ -84,9 +84,13 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
 
   // Determine current step based on user's onboarding status
   useEffect(() => {
-    if (!userProfile?.onboarding_status) return;
+    if (!userProfile) return;
     
-    switch (userProfile.onboarding_status) {
+    // Type-safe access to onboarding_status using as any for now (until types are regenerated)
+    const onboardingStatus = (userProfile as any).onboarding_status;
+    if (!onboardingStatus) return;
+    
+    switch (onboardingStatus) {
       case 'NEEDS_KYC':
         setCurrentStep(1);
         break;

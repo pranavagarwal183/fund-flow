@@ -799,6 +799,7 @@ export type Database = {
           onboarding_status: string | null
           phone: string | null
           risk_category: string | null
+          risk_profile: string | null
           risk_profile_status: string | null
           risk_score: number | null
           updated_at: string | null
@@ -816,6 +817,7 @@ export type Database = {
           onboarding_status?: string | null
           phone?: string | null
           risk_category?: string | null
+          risk_profile?: string | null
           risk_profile_status?: string | null
           risk_score?: number | null
           updated_at?: string | null
@@ -833,6 +835,7 @@ export type Database = {
           onboarding_status?: string | null
           phone?: string | null
           risk_category?: string | null
+          risk_profile?: string | null
           risk_profile_status?: string | null
           risk_score?: number | null
           updated_at?: string | null
@@ -845,7 +848,7 @@ export type Database = {
           created_at: string | null
           id: string
           price_alert_enabled: boolean | null
-          scheme_id: string | null
+          scheme_codes: string[] | null
           target_nav: number | null
           user_id: string | null
         }
@@ -854,7 +857,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           price_alert_enabled?: boolean | null
-          scheme_id?: string | null
+          scheme_codes?: string[] | null
           target_nav?: number | null
           user_id?: string | null
         }
@@ -863,18 +866,11 @@ export type Database = {
           created_at?: string | null
           id?: string
           price_alert_enabled?: boolean | null
-          scheme_id?: string | null
+          scheme_codes?: string[] | null
           target_nav?: number | null
           user_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "watchlists_scheme_id_fkey"
-            columns: ["scheme_id"]
-            isOneToOne: false
-            referencedRelation: "mutual_fund_schemes"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "watchlists_user_id_fkey"
             columns: ["user_id"]

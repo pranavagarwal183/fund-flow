@@ -1,46 +1,132 @@
-// deno-lint-ignore-file no-explicit-any
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface MarketDataRequest {
+  schemeCodes: string[];
+}
 
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   try {
-    if (req.method !== 'POST') {
-      return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: { 'content-type': 'application/json' } });
+    const { schemeCodes }: MarketDataRequest = await req.json();
+    
+    if (!schemeCodes || !Array.isArray(schemeCodes)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid scheme codes provided' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
-    const { scheme_codes } = await req.json();
-    if (!Array.isArray(scheme_codes) || scheme_codes.length === 0) {
-      return new Response(JSON.stringify({ error: 'scheme_codes array required' }), { status: 400, headers: { 'content-type': 'application/json' } });
+    // Initialize Supabase client for fetching scheme data
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Fetch fund data from our database
+    const { data: funds, error } = await supabase
+      .from('mutual_fund_schemes')
+      .select('*')
+      .in('scheme_code', schemeCodes)
+      .eq('is_active', true);
+
+    if (error) {
+      console.error('Database error:', error);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch fund data' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
-    // In production, fetch from a paid market data API with server-side API key and caching
-    // Placeholder: synthesize minimal data for each scheme
-    const now = Date.now();
-    const days = 30;
-    const response = scheme_codes.map((code: string) => {
-      const base = 100 + Math.random() * 50;
-      const series = Array.from({ length: days }, (_, i) => {
-        const t = i / days;
-        const value = base * (1 + 0.02 * Math.sin(6.28 * t) + 0.05 * t) * (1 + (Math.random() - 0.5) * 0.02);
-        return { date: new Date(now - (days - i) * 24 * 3600 * 1000).toISOString().slice(0, 10), nav: Number(value.toFixed(2)) };
+    // Transform fund data to include market data format
+    const marketData = funds.map(fund => {
+      // Calculate 30-day performance data (mock data for now)
+      const baseValue = fund.current_nav || 100;
+      const performanceData = Array.from({ length: 30 }, (_, i) => {
+        const variation = (Math.random() - 0.5) * 0.02; // ±1% daily variation
+        const value = baseValue * (1 + variation * (i / 30));
+        return {
+          date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          nav: parseFloat(value.toFixed(2))
+        };
       });
-      const nav = series[series.length - 1].nav;
+
       return {
-        scheme_code: code,
-        fund_name: `Fund ${code}`,
-        category: 'Flexi Cap',
-        metrics: {
-          nav,
-          return_1y: Number((5 + Math.random() * 15).toFixed(2)),
-          return_3y: Number((8 + Math.random() * 20).toFixed(2)),
+        scheme_code: fund.scheme_code,
+        scheme_name: fund.scheme_name,
+        amc_name: fund.amc_name,
+        fund_category: fund.fund_category,
+        fund_subcategory: fund.fund_subcategory,
+        risk_level: fund.risk_level,
+        current_nav: fund.current_nav,
+        nav_date: new Date().toISOString().split('T')[0],
+        returns: {
+          '1_day': fund.return_1day,
+          '1_week': fund.return_1week,
+          '1_month': fund.return_1month,
+          '3_month': fund.return_3month,
+          '6_month': fund.return_6month,
+          '1_year': fund.return_1year,
+          '3_year': fund.return_3year,
+          '5_year': fund.return_5year,
         },
-        series,
+        aum: fund.aum,
+        expense_ratio: fund.expense_ratio,
+        minimum_sip: fund.minimum_sip_amount,
+        minimum_lumpsum: fund.minimum_lumpsum_amount,
+        fund_manager: fund.fund_manager_name,
+        fund_manager_experience: fund.fund_manager_experience,
+        performance_data: performanceData,
+        last_updated: new Date().toISOString(),
       };
     });
 
-    return new Response(JSON.stringify({ data: response }), { status: 200, headers: { 'content-type': 'application/json' } });
-  } catch (e: any) {
-    return new Response(JSON.stringify({ error: e?.message || 'Unknown error' }), { status: 500, headers: { 'content-type': 'application/json' } });
+    // Add caching headers for 5 minutes
+    const cacheHeaders = {
+      ...corsHeaders,
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, max-age=300', // 5 minutes
+    };
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        data: marketData,
+        count: marketData.length,
+        timestamp: new Date().toISOString(),
+      }),
+      { 
+        status: 200, 
+        headers: cacheHeaders 
+      }
+    );
+
+  } catch (error) {
+    console.error('Error in fetch-market-data function:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: 'Internal server error',
+        message: error.message 
+      }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
   }
 });
-
-
