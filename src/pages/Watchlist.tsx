@@ -398,7 +398,7 @@ const Watchlist = () => {
       if (newSet.has(fundName)) newSet.delete(fundName); else newSet.add(fundName);
       setBookmarkedFunds(newSet);
       const scheme_codes = Array.from(newSet);
-      await supabase.from('watchlist').upsert({ user_id: user.id, scheme_codes, updated_at: new Date().toISOString() });
+      await supabase.from('watchlists').upsert({ user_id: user.id, scheme_codes, updated_at: new Date().toISOString() });
       toast({ title: 'Watchlist updated' });
       if (scheme_codes.length > 0) {
         const { data, error } = await supabase.functions.invoke('fetch-market-data', { body: { scheme_codes } });
@@ -424,7 +424,7 @@ const Watchlist = () => {
   useEffect(() => {
     if (!user) return;
     const loadAndFetch = async () => {
-      const { data: wl } = await supabase.from('watchlist').select('scheme_codes').eq('user_id', user.id).maybeSingle();
+      const { data: wl } = await supabase.from('watchlists').select('scheme_codes').eq('user_id', user.id).maybeSingle();
       const codes: string[] = wl?.scheme_codes || [];
       setBookmarkedFunds(new Set(codes));
       if (codes.length > 0) {
