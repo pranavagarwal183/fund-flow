@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CheckCircle, AlertCircle, Mail } from "lucide-react";
+import { validatePassword, validatePhoneNumber, sanitizeInput, authRateLimit } from "@/lib/security";
 
 export default function Signup() {
   const [form, setForm] = useState({
@@ -40,22 +41,49 @@ export default function Signup() {
     setLoading(true);
     
     try {
-      // Validate form
-      if (form.password.length < 6) {
-        setError("Password must be at least 6 characters long.");
+      // Check rate limiting
+      if (!authRateLimit.canAttempt(form.email)) {
+        const remainingTime = authRateLimit.getRemainingTime(form.email);
+        setError(`Too many signup attempts. Please try again in ${Math.ceil(remainingTime / 60)} minutes.`);
         setLoading(false);
         return;
       }
 
+      // Validate password strength
+      const passwordValidation = validatePassword(form.password);
+      if (!passwordValidation.isValid) {
+        setError(passwordValidation.message || "Password does not meet security requirements.");
+        setLoading(false);
+        return;
+      }
+
+      // Validate phone number if provided
+      if (form.phone && form.phone.trim()) {
+        const phoneValidation = validatePhoneNumber(form.phone);
+        if (!phoneValidation.isValid) {
+          setError(phoneValidation.message || "Invalid phone number format.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Sanitize inputs
+      const sanitizedForm = {
+        ...form,
+        email: sanitizeInput(form.email).toLowerCase(),
+        full_name: sanitizeInput(form.full_name),
+        phone: sanitizeInput(form.phone)
+      };
+
       const redirectUrl = `${window.location.origin}/dashboard`;
       const { data, error: signUpError } = await supabase.auth.signUp({
-        email: form.email.trim(),
+        email: sanitizedForm.email,
         password: form.password,
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            full_name: form.full_name,
-            phone: form.phone,
+            full_name: sanitizedForm.full_name,
+            phone: sanitizedForm.phone,
             date_of_birth: form.date_of_birth,
             gender: form.gender,
           }
@@ -79,8 +107,8 @@ export default function Signup() {
             .insert({
               id: data.user.id,
               email: data.user.email,
-              full_name: form.full_name,
-              phone: form.phone,
+              full_name: sanitizedForm.full_name,
+              phone: sanitizedForm.phone,
               date_of_birth: form.date_of_birth,
               gender: form.gender,
               kyc_status: 'pending',
@@ -168,12 +196,15 @@ export default function Signup() {
                   <Input
                     id="password"
                     type="password"
-                    placeholder="Choose a password"
+                    placeholder="At least 8 characters with uppercase, lowercase & number"
                     value={form.password}
                     onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                     required
                     disabled={loading}
                   />
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Password must contain at least 8 characters with uppercase, lowercase letters and numbers.
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="full_name">Full Name</Label>

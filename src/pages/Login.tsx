@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CheckCircle, AlertCircle } from "lucide-react";
+import { sanitizeInput, authRateLimit } from "@/lib/security";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -33,8 +34,18 @@ export default function Login() {
     setLoading(true);
     
     try {
+      // Check rate limiting
+      if (!authRateLimit.canAttempt(form.email)) {
+        const remainingTime = authRateLimit.getRemainingTime(form.email);
+        setError(`Too many login attempts. Please try again in ${Math.ceil(remainingTime / 60)} minutes.`);
+        setLoading(false);
+        return;
+      }
+
+      // Sanitize email input
+      const sanitizedEmail = sanitizeInput(form.email).toLowerCase();
       const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: form.email.trim(),
+        email: sanitizedEmail,
         password: form.password,
       });
       

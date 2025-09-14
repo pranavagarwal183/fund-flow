@@ -463,6 +463,47 @@ serve(async (req) => {
       )
     }
 
+    // Rate limiting check
+    const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+    const rateLimitIdentifier = `${clientIP}-kyc-verify`;
+    
+    // Initialize Supabase client for rate limiting
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    
+    if (supabaseUrl && supabaseServiceKey) {
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      
+      // Check rate limit using enhanced function
+      const { data: rateLimitCheck, error: rateLimitError } = await supabase
+        .rpc('check_rate_limit_enhanced', {
+          identifier_input: rateLimitIdentifier,
+          action_input: 'kyc_verify',
+          max_attempts: 10,
+          window_minutes: 60
+        });
+      
+      if (rateLimitError) {
+        console.error('Rate limit check failed:', rateLimitError);
+      } else if (!rateLimitCheck) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Rate limit exceeded. Too many KYC verification attempts. Please try again later.',
+            retryAfter: 3600 // 1 hour in seconds
+          }),
+          { 
+            status: 429, 
+            headers: { 
+              ...corsHeaders, 
+              'Content-Type': 'application/json',
+              'Retry-After': '3600'
+            } 
+          }
+        );
+      }
+    }
+
     // Get request body
     const body: KYCRequest = await req.json()
     

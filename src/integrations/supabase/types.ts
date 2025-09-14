@@ -170,7 +170,7 @@ export type Database = {
           target_amount: number
           target_date: string
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
@@ -185,7 +185,7 @@ export type Database = {
           target_amount: number
           target_date: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
@@ -200,7 +200,7 @@ export type Database = {
           target_amount?: number
           target_date?: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -271,7 +271,7 @@ export type Database = {
           rejection_reason: string | null
           state: string | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
           verification_status: string | null
         }
         Insert: {
@@ -299,7 +299,7 @@ export type Database = {
           rejection_reason?: string | null
           state?: string | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
           verification_status?: string | null
         }
         Update: {
@@ -327,7 +327,7 @@ export type Database = {
           rejection_reason?: string | null
           state?: string | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
           verification_status?: string | null
         }
         Relationships: [
@@ -588,6 +588,33 @@ export type Database = {
           },
         ]
       }
+      rate_limits: {
+        Row: {
+          action: string
+          attempts: number | null
+          created_at: string | null
+          id: string
+          identifier: string
+          window_start: string | null
+        }
+        Insert: {
+          action: string
+          attempts?: number | null
+          created_at?: string | null
+          id?: string
+          identifier: string
+          window_start?: string | null
+        }
+        Update: {
+          action?: string
+          attempts?: number | null
+          created_at?: string | null
+          id?: string
+          identifier?: string
+          window_start?: string | null
+        }
+        Relationships: []
+      }
       risk_assessments: {
         Row: {
           assessment_version: number | null
@@ -600,7 +627,7 @@ export type Database = {
           responses: Json
           risk_category: string | null
           risk_score: number | null
-          user_id: string | null
+          user_id: string
           valid_until: string | null
         }
         Insert: {
@@ -614,7 +641,7 @@ export type Database = {
           responses: Json
           risk_category?: string | null
           risk_score?: number | null
-          user_id?: string | null
+          user_id: string
           valid_until?: string | null
         }
         Update: {
@@ -628,7 +655,7 @@ export type Database = {
           responses?: Json
           risk_category?: string | null
           risk_score?: number | null
-          user_id?: string | null
+          user_id?: string
           valid_until?: string | null
         }
         Relationships: [
@@ -658,7 +685,7 @@ export type Database = {
           status: string | null
           total_installments: number | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           bank_account_id?: string | null
@@ -676,7 +703,7 @@ export type Database = {
           status?: string | null
           total_installments?: number | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           bank_account_id?: string | null
@@ -694,7 +721,7 @@ export type Database = {
           status?: string | null
           total_installments?: number | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -730,7 +757,7 @@ export type Database = {
           transaction_type: string | null
           units: number | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           amount: number
@@ -748,7 +775,7 @@ export type Database = {
           transaction_type?: string | null
           units?: number | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           amount?: number
@@ -766,7 +793,7 @@ export type Database = {
           transaction_type?: string | null
           units?: number | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -850,7 +877,7 @@ export type Database = {
           price_alert_enabled: boolean | null
           scheme_codes: string[] | null
           target_nav: number | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           alert_threshold_percentage?: number | null
@@ -859,7 +886,7 @@ export type Database = {
           price_alert_enabled?: boolean | null
           scheme_codes?: string[] | null
           target_nav?: number | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           alert_threshold_percentage?: number | null
@@ -868,7 +895,7 @@ export type Database = {
           price_alert_enabled?: boolean | null
           scheme_codes?: string[] | null
           target_nav?: number | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -905,6 +932,15 @@ export type Database = {
           total_invested: number
           wealth_gained: number
         }[]
+      }
+      check_rate_limit_enhanced: {
+        Args: {
+          action_input: string
+          identifier_input: string
+          max_attempts?: number
+          window_minutes?: number
+        }
+        Returns: boolean
       }
       get_kyc_details_secure: {
         Args: Record<PropertyKey, never>
@@ -953,6 +989,14 @@ export type Database = {
           p_state?: string
         }
         Returns: string
+      }
+      validate_aadhaar_number: {
+        Args: { aadhaar_input: string }
+        Returns: boolean
+      }
+      validate_pan_number: {
+        Args: { pan_input: string }
+        Returns: boolean
       }
     }
     Enums: {
