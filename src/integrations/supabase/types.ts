@@ -156,6 +156,45 @@ export type Database = {
           },
         ]
       }
+      document_access_log: {
+        Row: {
+          access_type: string
+          accessed_at: string
+          bucket_name: string
+          document_type: string
+          expires_at: string | null
+          file_path: string
+          id: string
+          ip_address: unknown | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          access_type?: string
+          accessed_at?: string
+          bucket_name: string
+          document_type: string
+          expires_at?: string | null
+          file_path: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          access_type?: string
+          accessed_at?: string
+          bucket_name?: string
+          document_type?: string
+          expires_at?: string | null
+          file_path?: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       investment_goals: {
         Row: {
           created_at: string | null
@@ -966,8 +1005,16 @@ export type Database = {
           verification_status: string
         }[]
       }
+      get_secure_document_url: {
+        Args: { bucket_name: string; expires_in?: number; file_path: string }
+        Returns: string
+      }
       mask_sensitive_data: {
         Args: { data_type: string; value: string }
+        Returns: string
+      }
+      mask_sensitive_data_enhanced: {
+        Args: { data_type: string; user_salt?: string; value: string }
         Returns: string
       }
       refresh_kyc_display_cache: {

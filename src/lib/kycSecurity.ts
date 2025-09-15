@@ -180,7 +180,7 @@ export class SecureKYCService {
   }
 
   /**
-   * Validate sensitive data format before submission
+   * Validate sensitive data format before submission using enhanced security functions
    */
   static validateSensitiveData(data: {
     pan_number?: string;
@@ -189,26 +189,30 @@ export class SecureKYCService {
   }): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
     
-    // PAN validation (basic format check)
+    // Use the enhanced validation from security.ts
+    const { validatePAN, validateAadhaar, validateBankAccount } = require('./security');
+    
+    // PAN validation
     if (data.pan_number) {
-      const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-      if (!panRegex.test(data.pan_number)) {
-        errors.push('Invalid PAN format. Must be 10 characters (5 letters, 4 digits, 1 letter)');
+      const panResult = validatePAN(data.pan_number);
+      if (!panResult.isValid) {
+        errors.push(panResult.message || 'Invalid PAN format');
       }
     }
     
-    // Aadhaar validation (basic format check)
+    // Aadhaar validation
     if (data.aadhaar_number) {
-      const aadhaarRegex = /^[0-9]{12}$/;
-      if (!aadhaarRegex.test(data.aadhaar_number)) {
-        errors.push('Invalid Aadhaar format. Must be 12 digits');
+      const aadhaarResult = validateAadhaar(data.aadhaar_number);
+      if (!aadhaarResult.isValid) {
+        errors.push(aadhaarResult.message || 'Invalid Aadhaar format');
       }
     }
     
-    // Bank account validation (basic length check)
+    // Bank account validation
     if (data.bank_account_number) {
-      if (data.bank_account_number.length < 8 || data.bank_account_number.length > 20) {
-        errors.push('Bank account number must be between 8 and 20 characters');
+      const bankResult = validateBankAccount(data.bank_account_number);
+      if (!bankResult.isValid) {
+        errors.push(bankResult.message || 'Invalid bank account format');
       }
     }
     
@@ -216,6 +220,52 @@ export class SecureKYCService {
       isValid: errors.length === 0,
       errors
     };
+  }
+
+  /**
+   * Get enhanced security metrics and alerts
+   */
+  static async getSecurityMetrics(): Promise<{
+    recentAccess: number;
+    suspiciousActivity: boolean;
+    lastCacheRefresh: string | null;
+    documentsAccessed: number;
+  }> {
+    try {
+      // Get recent audit logs
+      const auditLogs = await this.getAuditLogs();
+      const recentAccess = auditLogs.filter(log => {
+        const accessTime = new Date(log.accessed_at);
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        return accessTime > oneHourAgo;
+      }).length;
+
+      // Check for suspicious patterns (multiple rapid access attempts)
+      const suspiciousActivity = recentAccess > 10;
+
+      // Get last cache refresh
+      const cacheRefreshLogs = auditLogs.filter(log => log.action === 'CACHE_REFRESH');
+      const lastCacheRefresh = cacheRefreshLogs[0]?.accessed_at || null;
+
+      // Count document access logs
+      const documentLogs = auditLogs.filter(log => log.action === 'DOCUMENT_ACCESS');
+      const documentsAccessed = documentLogs.length;
+
+      return {
+        recentAccess,
+        suspiciousActivity,
+        lastCacheRefresh,
+        documentsAccessed
+      };
+    } catch (error) {
+      console.error('Error getting security metrics:', error);
+      return {
+        recentAccess: 0,
+        suspiciousActivity: false,
+        lastCacheRefresh: null,
+        documentsAccessed: 0
+      };
+    }
   }
 }
 
