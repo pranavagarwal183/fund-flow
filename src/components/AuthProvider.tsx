@@ -23,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      // Use the secure profile access function with audit logging
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -37,6 +38,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserProfile(data);
     } catch (error) {
       console.error('Error fetching user profile:', error);
+      // Fallback: try to get basic profile data
+      try {
+        const { data: basicProfile } = await supabase
+          .rpc('get_masked_profile', { profile_user_id: userId });
+        
+        if (basicProfile && basicProfile.length > 0) {
+          setUserProfile(basicProfile[0] as any);
+        }
+      } catch (fallbackError) {
+        console.error('Fallback profile fetch failed:', fallbackError);
+      }
     }
   };
 

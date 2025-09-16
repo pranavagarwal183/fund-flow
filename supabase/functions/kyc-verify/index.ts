@@ -312,15 +312,15 @@ async function checkKYCDetailsByPAN(panNumber: string): Promise<KYCResponse> {
       };
     }
 
-    // Update user profile KYC status
-    const { error: profileUpdateError } = await supabase
-      .from('user_profiles')
-      .update({
-        kyc_status: 'completed',
-        kyc_completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', kycDetails.user_id);
+    // Update user profile KYC status using secure function
+    const { data: profileUpdateResult, error: profileUpdateError } = await supabase
+      .rpc('secure_update_profile', {
+        profile_user_id: kycDetails.user_id,
+        update_data: {
+          kyc_status: 'completed',
+          kyc_completed_at: new Date().toISOString()
+        }
+      });
 
     if (profileUpdateError) {
       console.error('Profile update error:', profileUpdateError);

@@ -851,6 +851,39 @@ export type Database = {
           },
         ]
       }
+      user_profile_audit_log: {
+        Row: {
+          accessed_at: string
+          accessed_by: string | null
+          action: string
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          accessed_at?: string
+          accessed_by?: string | null
+          action: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          accessed_at?: string
+          accessed_by?: string | null
+          action?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           account_status: string | null
@@ -1005,6 +1038,22 @@ export type Database = {
           verification_status: string
         }[]
       }
+      get_masked_profile: {
+        Args: { profile_user_id: string }
+        Returns: {
+          account_status: string
+          created_at: string
+          date_of_birth_masked: string
+          email: string
+          full_name: string
+          id: string
+          kyc_status: string
+          onboarding_status: string
+          phone_masked: string
+          risk_category: string
+          updated_at: string
+        }[]
+      }
       get_secure_document_url: {
         Args: { bucket_name: string; expires_in?: number; file_path: string }
         Returns: string
@@ -1020,6 +1069,10 @@ export type Database = {
       refresh_kyc_display_cache: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      secure_update_profile: {
+        Args: { profile_user_id: string; update_data: Json }
+        Returns: boolean
       }
       update_kyc_details_secure: {
         Args: {
@@ -1043,6 +1096,10 @@ export type Database = {
       }
       validate_pan_number: {
         Args: { pan_input: string }
+        Returns: boolean
+      }
+      verify_profile_access: {
+        Args: { target_user_id: string }
         Returns: boolean
       }
     }

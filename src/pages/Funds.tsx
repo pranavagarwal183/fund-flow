@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 
@@ -44,7 +45,23 @@ const Funds = () => {
   const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
-  const apiKey = import.meta.env.VITE_INDIAN_STOCK_API_KEY;
+  // Secure API function to fetch fund data
+  const fetchFundData = async (fundName: string) => {
+    const { data, error } = await supabase.functions.invoke('secure-api-proxy', {
+      body: {
+        endpoint: 'mutual_funds_details',
+        method: 'GET',
+        params: {
+          stock_name: fundName
+        }
+      }
+    });
+
+    if (error) throw new Error(error.message || 'Failed to fetch fund data');
+    if (!data.success) throw new Error(data.error || 'API request failed');
+    
+    return data.data;
+  };
 
   // 🔁 Fetch trending funds on first load
   useEffect(() => {
@@ -53,39 +70,40 @@ const Funds = () => {
         setLoading(true);
         setError(null);
 
-        if (!apiKey) throw new Error("API key missing in .env");
-
         const fetchedFunds: Fund[] = [];
 
         for (const name of trendingFundNames) {
-          const res = await fetch(`https://stock.indianapi.in/mutual_funds_details?stock_name=${name}`, {
-            headers: { "x-api-key": apiKey }
-          });
+          try {
+            const data = await fetchFundData(name);
 
-          if (!res.ok) continue;
+            const fund: Fund = {
+              id: data.basic_info.fund_name,
+              name: data.basic_info.fund_name,
+              category: data.basic_info.category,
+              rating: Math.round(data.returns.risk_metrics?.risk_rating || 0),
+              nav: data.nav_info.current_nav,
+              returns: {
+                "1Y": data.returns.absolute["1y"] || 0,
+                "3Y": data.returns.cagr["3y"] || 0,
+                "5Y": data.returns.cagr["5y"] || 0,
+              },
+              expenseRatio: data.expense_ratio.current || 0,
+              aum: `₹${Math.round(data.basic_info.fund_size).toLocaleString()} Cr`,
+              riskLevel: data.basic_info.risk_level.replace(" Risk", ""),
+              minInvestment: 500,
+              sipMinimum: 500,
+              isRecommended: data.returns.cagr["5y"] > 20 && data.expense_ratio.current < 1.5,
+            };
 
-          const data = await res.json();
+            fetchedFunds.push(fund);
+          } catch (fundError) {
+            console.warn(`Failed to fetch data for ${name}:`, fundError);
+            // Continue with other funds
+          }
+        }
 
-          const fund: Fund = {
-            id: data.basic_info.fund_name,
-            name: data.basic_info.fund_name,
-            category: data.basic_info.category,
-            rating: Math.round(data.returns.risk_metrics?.risk_rating || 0),
-            nav: data.nav_info.current_nav,
-            returns: {
-              "1Y": data.returns.absolute["1y"] || 0,
-              "3Y": data.returns.cagr["3y"] || 0,
-              "5Y": data.returns.cagr["5y"] || 0,
-            },
-            expenseRatio: data.expense_ratio.current || 0,
-            aum: `₹${Math.round(data.basic_info.fund_size).toLocaleString()} Cr`,
-            riskLevel: data.basic_info.risk_level.replace(" Risk", ""),
-            minInvestment: 500,
-            sipMinimum: 500,
-            isRecommended: data.returns.cagr["5y"] > 20 && data.expense_ratio.current < 1.5,
-          };
-
-          fetchedFunds.push(fund);
+        if (fetchedFunds.length === 0) {
+          throw new Error("No funds could be loaded from the trending list");
         }
 
         setAllFunds(fetchedFunds);
@@ -108,13 +126,7 @@ const Funds = () => {
         setLoading(true);
         setError(null);
 
-        const res = await fetch(`https://stock.indianapi.in/mutual_funds_details?stock_name=${searchTerm}`, {
-          headers: { "x-api-key": apiKey }
-        });
-
-        if (!res.ok) throw new Error("Search failed or no results.");
-
-        const data = await res.json();
+        const data = await fetchFundData(searchTerm);
 
         const fund: Fund = {
           id: data.basic_info.fund_name,
