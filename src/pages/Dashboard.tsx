@@ -408,7 +408,7 @@ const Dashboard = () => {
                         key={index} 
                         className="space-y-2 p-3 rounded-lg hover:bg-muted/30 transition-colors"
                         whileHover={{ scale: 1.02 }}
-                      >
+                      >z
                         <div className="flex items-center space-x-2">
                           <IconComponent className="h-4 w-4 text-primary" />
                           <span className="font-medium text-foreground text-sm">{goal.name}</span>
