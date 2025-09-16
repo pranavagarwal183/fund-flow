@@ -32,7 +32,7 @@ export type Database = {
           tax_rate: number | null
           transaction_id: string | null
           units_sold: number | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
@@ -51,7 +51,7 @@ export type Database = {
           tax_rate?: number | null
           transaction_id?: string | null
           units_sold?: number | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
@@ -70,7 +70,7 @@ export type Database = {
           tax_rate?: number | null
           transaction_id?: string | null
           units_sold?: number | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -109,7 +109,7 @@ export type Database = {
           tds_deducted: number | null
           total_dividend: number | null
           units_held: number | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
@@ -123,7 +123,7 @@ export type Database = {
           tds_deducted?: number | null
           total_dividend?: number | null
           units_held?: number | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
@@ -137,7 +137,7 @@ export type Database = {
           tds_deducted?: number | null
           total_dividend?: number | null
           units_held?: number | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -580,7 +580,7 @@ export type Database = {
           total_units: number | null
           unrealized_gain_loss: number | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           average_nav?: number | null
@@ -594,7 +594,7 @@ export type Database = {
           total_units?: number | null
           unrealized_gain_loss?: number | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           average_nav?: number | null
@@ -608,7 +608,7 @@ export type Database = {
           total_units?: number | null
           unrealized_gain_loss?: number | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
