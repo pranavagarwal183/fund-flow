@@ -1,7 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { createClient } from '@supabase/supabase-js';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -32,8 +31,8 @@ serve(async (req) => {
     }
 
     // Initialize Supabase client for fetching scheme data
-    const supabaseUrl = Deno.env.get('https://zrozbgygozyzziuzwlap.supabase.co')!;
-    const supabaseServiceKey = Deno.env.get('process.env.SUPABASE_KEY')!;
+    const supabaseUrl = 'https://zrozbgygozyzziuzwlap.supabase.co';
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Fetch fund data from our database
