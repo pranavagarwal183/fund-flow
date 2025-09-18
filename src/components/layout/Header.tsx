@@ -111,7 +111,7 @@ export const Header = () => {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/funds" className="flex items-center space-x-2">
+                  <Link to="/portfolio" className="flex items-center space-x-2">
                     <FolderKanban className="h-4 w-4" />
                     <span>Portfolio</span>
                   </Link>
@@ -226,7 +226,7 @@ export const Header = () => {
                       <span>My Journey</span>
                     </Link>
                     <Link
-                      to="/funds"
+                      to="/portfolio"
                       className="flex items-center space-x-2 text-sm text-muted-foreground hover:text-primary mb-2"
                       onClick={() => setIsMenuOpen(false)}
                     >

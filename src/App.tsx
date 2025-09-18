@@ -7,7 +7,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
 import Services from "./pages/Services";
 import Dashboard from "./pages/Dashboard";
-import Funds from "./pages/Funds";
+import Portfolio from "./pages/Portfolio";
 import Watchlist from "./pages/Watchlist";
 import Reports from "./pages/Reports";
 import Goals from "./pages/Goals";
@@ -22,6 +22,7 @@ import Learn from "./pages/Learn";
 // Import AuthProvider and ProtectedRoute
 import { AuthProvider } from "./components/AuthProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ProtectedPortfolio from "./components/ProtectedPortfolio";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 
@@ -56,11 +57,12 @@ const App = () => (
             <Route path="/learn" element={<Learn />} />
             <Route path="/risk-disclaimer" element={<RiskDisclaimer />} />
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/watchlist" element={<Watchlist />} />
             
             {/* Protected Routes - Require Authentication */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/funds" element={<ProtectedRoute><Funds /></ProtectedRoute>} />
-            <Route path="/watchlist" element={<Watchlist />} />
+            <Route path="/portfolio" element={<ProtectedPortfolio><Portfolio /></ProtectedPortfolio>} />
+            <Route path="/funds" element={<ProtectedPortfolio><Portfolio /></ProtectedPortfolio>} />
             <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
             <Route path="/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
             <Route path="/portfolio-analysis" element={<ProtectedRoute><PortfolioAnalysis /></ProtectedRoute>} />

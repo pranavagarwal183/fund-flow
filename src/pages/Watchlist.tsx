@@ -1,311 +1,416 @@
 import { useState, useEffect, useMemo } from "react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Search,
+  TrendingUp,
+  Star,
+  Eye,
+  ShoppingCart,
+  Loader2,
+  AlertTriangle,
+  Plus,
+  Heart
+} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, X, Info, Wallet, BarChart, Percent, Calendar, Shield, Bookmark, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 
-// --- FundDetailsModal Component ---
-interface FundDetailsModalProps {
-  fund: any; // Using 'any' based on your API response structure
-  onClose: () => void;
+interface Fund {
+  id: number | string;
+  name: string;
+  category: string;
+  rating: number;
+  nav: number;
+  returns: { "1Y": number; "3Y": number; "5Y": number };
+  expenseRatio: number;
+  aum: string;
+  riskLevel: string;
+  minInvestment: number;
+  sipMinimum: number;
+  isRecommended: boolean;
 }
 
-const getRiskColor = (risk: string) => {
-  switch (risk) {
-    case "Low": return "text-cyan-500";
-    case "Low to Moderate": return "text-green-500";
-    case "Moderate": return "text-yellow-500";
-    case "Moderately High": return "text-orange-500";
-    case "High": return "text-red-500";
-    case "Very High": return "text-red-700";
-    default: return "text-gray-500";
-  }
-};
+const trendingFundNames = ["ICICI", "HDFC", "Axis", "SBI", "Kotak"];
 
-const FundDetailsModal: React.FC<FundDetailsModalProps> = ({ fund, onClose }) => {
-  if (!fund) return null;
-
-  const getFundDetail = (path: string[], defaultValue: any = "N/A") => {
-    let value = fund;
-    for (const key of path) {
-      if (value && typeof value === 'object' && key in value) {
-        value = value[key];
-      } else {
-        return defaultValue;
-      }
-    }
-    return value;
-  };
-
-  const currentNav = getFundDetail(["nav_info", "current_nav"]);
-  const fundManager = getFundDetail(["basic_info", "fund_manager"]);
-  const inceptionDate = getFundDetail(["basic_info", "inception_date"]);
-  const benchmark = getFundDetail(["basic_info", "benchmark"]);
-  const riskLevel = getFundDetail(["basic_info", "risk_level"], "N/A").replace(" Risk", "");
-  const expenseRatio = getFundDetail(["expense_ratio", "current"], 0);
-  const aumValue = getFundDetail(["basic_info", "fund_size"], 0);
-  const returns1Y = getFundDetail(["returns", "absolute", "1y"], 0);
-  const returns3Y = getFundDetail(["returns", "cagr", "3y"], 0);
-  const returns5Y = getFundDetail(["returns", "cagr", "5y"], 0);
-  const minSIP = getFundDetail(["investment_info", "minimum_sip"], "N/A");
-  const minLumpsum = getFundDetail(["investment_info", "minimum_lumpsum"], "N/A");
-  const stampDuty = getFundDetail(["investment_info", "stamp_duty"], "N/A");
-  const fundHouseName = getFundDetail(["fund_house", "name"]);
-  const exitLoad = getFundDetail(["exit_load"], []);
-  const topHoldings = getFundDetail(["holdings"], []);
-
-  const formatReturn = (value: number) => {
-    if (value === 0) return "N/A";
-    const formatted = value.toFixed(2);
-    return value > 0 ? `+${formatted}%` : `${formatted}%`;
-  };
-
-  return (
-    <div
-      className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 animate-fade-in"
-      onClick={onClose}
-    >
-      <Card
-        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-slide-up bg-white dark:bg-gray-900"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <CardHeader className="p-6 border-b border-gray-200 dark:border-gray-700 flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">
-              {fund.basic_info?.fund_name || "Fund Details"}
-            </CardTitle>
-            <CardDescription className="text-gray-500 dark:text-gray-400">
-              {fund.basic_info?.category || "N/A"}
-            </CardDescription>
-          </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200">
-            <X className="h-6 w-6" />
-          </Button>
-        </CardHeader>
-        <CardContent className="p-6">
-           {/* ... (Modal content from your original code) ... */}
-        </CardContent>
-      </Card>
-      <style>{`
-        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
-        .animate-slide-up { animation: slide-up 0.4s ease-out forwards; }
-      `}</style>
-    </div>
-  );
-};
-
-
-// --- Main Watchlist Component ---
 const Watchlist = () => {
+  const [allFunds, setAllFunds] = useState<Fund[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearchLoading, setIsSearchLoading] = useState(false);
-  
-  const [bookmarkedIsins, setBookmarkedIsins] = useState<Set<string>>(new Set());
-  const [liveData, setLiveData] = useState<Record<string, any>>({});
-  const [isWatchlistLoading, setIsWatchlistLoading] = useState(false);
-  
-  const [selectedFund, setSelectedFund] = useState<any | null>(null);
+  const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
 
-  const WATCHLIST_STORAGE_KEY = 'fundflow-watchlist';
-
-  // Load watchlist from localStorage on initial component mount
-  useEffect(() => {
-    try {
-      const savedIsins = localStorage.getItem(WATCHLIST_STORAGE_KEY);
-      if (savedIsins) {
-        setBookmarkedIsins(new Set(JSON.parse(savedIsins)));
+  // Secure API function to fetch fund data
+  const fetchFundData = async (fundName: string) => {
+    const { data, error } = await supabase.functions.invoke('secure-api-proxy', {
+      body: {
+        endpoint: 'mutual_funds_details',
+        method: 'GET',
+        params: {
+          stock_name: fundName
+        }
       }
-    } catch (error) {
-      console.error("Failed to load watchlist from localStorage", error);
-    }
+    });
+
+    if (error) throw new Error(error.message || 'Failed to fetch fund data');
+    if (!data.success) throw new Error(data.error || 'API request failed');
+    
+    return data.data;
+  };
+
+  // 🔁 Fetch trending funds on first load
+  useEffect(() => {
+    const fetchTrendingFunds = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const fetchedFunds: Fund[] = [];
+
+        for (const name of trendingFundNames) {
+          try {
+            const data = await fetchFundData(name);
+
+            const fund: Fund = {
+              id: data.basic_info.fund_name,
+              name: data.basic_info.fund_name,
+              category: data.basic_info.category,
+              rating: Math.round(data.returns.risk_metrics?.risk_rating || 0),
+              nav: data.nav_info.current_nav,
+              returns: {
+                "1Y": data.returns.absolute["1y"] || 0,
+                "3Y": data.returns.cagr["3y"] || 0,
+                "5Y": data.returns.cagr["5y"] || 0,
+              },
+              expenseRatio: data.expense_ratio.current || 0,
+              aum: `₹${Math.round(data.basic_info.fund_size).toLocaleString()} Cr`,
+              riskLevel: data.basic_info.risk_level.replace(" Risk", ""),
+              minInvestment: 500,
+              sipMinimum: 500,
+              isRecommended: data.returns.cagr["5y"] > 20 && data.expense_ratio.current < 1.5,
+            };
+
+            fetchedFunds.push(fund);
+          } catch (fundError) {
+            console.warn(`Failed to fetch data for ${name}:`, fundError);
+            // Continue with other funds
+          }
+        }
+
+        if (fetchedFunds.length === 0) {
+          throw new Error("No funds could be loaded from the trending list");
+        }
+
+        setAllFunds(fetchedFunds);
+      } catch (err: any) {
+        setError(err.message || "Failed to fetch trending funds.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTrendingFunds();
   }, []);
 
-  // Save watchlist to localStorage whenever it changes
+  // 🔍 Search logic (debounced)
   useEffect(() => {
-    try {
-      localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(Array.from(bookmarkedIsins)));
-    } catch (error) {
-      console.error("Failed to save watchlist to localStorage", error);
-    }
-  }, [bookmarkedIsins]);
+    if (!searchTerm) return;
 
-  // Fetch data for bookmarked funds whenever the list changes
-  useEffect(() => {
-    const isins = Array.from(bookmarkedIsins);
-    if (isins.length === 0) {
-      setLiveData({});
-      return;
-    }
-
-    let aborted = false;
-    const controller = new AbortController();
-    
-    const fetchWatchlistData = async () => {
-      setIsWatchlistLoading(true);
+    const timeout = setTimeout(async () => {
       try {
-        const response = await fetch('/api/funds', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ isins }),
-          signal: controller.signal,
-        });
-        if (!response.ok) throw new Error("Failed to fetch watchlist data");
-        
-        const data = await response.json();
-        if (aborted) return;
+        setLoading(true);
+        setError(null);
 
-        const dataMap = (data.results || []).reduce((acc: Record<string, any>, fund: any) => {
-          acc[fund.isin] = fund;
-          return acc;
-        }, {});
+        const data = await fetchFundData(searchTerm);
 
-        setLiveData(dataMap);
-      } catch (error: any) {
-        if (error.name !== 'AbortError') {
-          console.error("Error fetching watchlist data:", error);
-        }
+        const fund: Fund = {
+          id: data.basic_info.fund_name,
+          name: data.basic_info.fund_name,
+          category: data.basic_info.category,
+          rating: Math.round(data.returns.risk_metrics?.risk_rating || 0),
+          nav: data.nav_info.current_nav,
+          returns: {
+            "1Y": data.returns.absolute["1y"] || 0,
+            "3Y": data.returns.cagr["3y"] || 0,
+            "5Y": data.returns.cagr["5y"] || 0,
+          },
+          expenseRatio: data.expense_ratio.current || 0,
+          aum: `₹${Math.round(data.basic_info.fund_size).toLocaleString()} Cr`,
+          riskLevel: data.basic_info.risk_level.replace(" Risk", ""),
+          minInvestment: 500,
+          sipMinimum: 500,
+          isRecommended: data.returns.cagr["5y"] > 20 && data.expense_ratio.current < 1.5,
+        };
+
+        setAllFunds([fund]);
+      } catch (err: any) {
+        setError(err.message || "Error fetching searched fund.");
       } finally {
-        if (!aborted) setIsWatchlistLoading(false);
+        setLoading(false);
       }
-    };
+    }, 500);
 
-    fetchWatchlistData();
-
-    return () => {
-      aborted = true;
-      controller.abort();
-    };
-  }, [bookmarkedIsins]);
-  
-  // Debounced search effect
-  useEffect(() => {
-    const trimmedSearch = searchTerm.trim();
-    if (!trimmedSearch) {
-      setSearchResults([]);
-      return;
-    }
-
-    const controller = new AbortController();
-    const timer = setTimeout(() => {
-      setIsSearchLoading(true);
-      fetch(`/api/funds?q=${encodeURIComponent(trimmedSearch)}`, { signal: controller.signal })
-        .then(res => res.ok ? res.json() : Promise.reject(res))
-        .then(data => setSearchResults(data.results || []))
-        .catch(err => {
-          if (err.name !== 'AbortError') console.error("Search failed:", err);
-        })
-        .finally(() => setIsSearchLoading(false));
-    }, 300); // 300ms debounce
-
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
+    return () => clearTimeout(timeout);
   }, [searchTerm]);
 
-  const handleBookmarkToggle = (isin: string) => {
-    setBookmarkedIsins(prevIsins => {
-      const newIsins = new Set(prevIsins);
-      if (newIsins.has(isin)) {
-        newIsins.delete(isin);
-      } else {
-        newIsins.add(isin);
-      }
-      return newIsins;
-    });
+  const getRiskColor = (risk: string) => {
+    switch (risk) {
+      case "Low": return "text-green-500";
+      case "Moderate": return "text-yellow-500";
+      case "High": return "text-orange-500";
+      case "Very High": return "text-red-500";
+      default: return "text-gray-500";
+    }
   };
 
-  const itemsToDisplay = useMemo(() => {
-    if (searchTerm.trim()) {
-      return searchResults;
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(amount);
+
+  const handleAddToWatchlist = (fund: Fund) => {
+    const newWatchlist = new Set(watchlist);
+    if (newWatchlist.has(fund.id.toString())) {
+      newWatchlist.delete(fund.id.toString());
+      toast({
+        title: "Removed from watchlist",
+        description: `${fund.name} has been removed from your watchlist.`,
+      });
+    } else {
+      newWatchlist.add(fund.id.toString());
+      toast({
+        title: "Added to watchlist",
+        description: `${fund.name} has been added to your watchlist!`,
+      });
     }
-    return Array.from(bookmarkedIsins).map(isin => liveData[isin]).filter(Boolean);
-  }, [searchTerm, searchResults, bookmarkedIsins, liveData]);
+    setWatchlist(newWatchlist);
+  };
+
+  const handleInvestNow = (fund: Fund) => {
+    toast({
+      title: "Investment initiated",
+      description: `Redirecting to investment page for ${fund.name}...`,
+    });
+    // Here you would typically redirect to an investment flow
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.5 }
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
-      <div className="container mx-auto px-4 py-8 flex-grow">
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Fund Watchlist</h1>
-          <p className="text-xl text-muted-foreground mb-6">Track and analyze mutual funds - no login required</p>
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search for mutual funds..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-             {isSearchLoading && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                </div>
+      <motion.main 
+        className="container mx-auto px-4 py-8"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Header */}
+        <motion.div className="mb-8" variants={itemVariants}>
+          <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">Discover Mutual Funds</h1>
+          <p className="text-muted-foreground">Explore and search from our comprehensive fund database - no login required</p>
+        </motion.div>
+
+        {/* Search Input */}
+        <motion.div variants={itemVariants}>
+          <Card className="shadow-soft mb-8 card-hover">
+            <CardContent className="p-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search funds by company name (e.g., Nippon, Quant)..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 form-input"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Loading and Error */}
+        <AnimatePresence>
+          {loading && (
+            <motion.div 
+              className="flex justify-center items-center py-20"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              <span className="ml-4 text-lg text-muted-foreground">Loading Funds...</span>
+            </motion.div>
+          )}
+          {error && (
+            <motion.div 
+              className="flex flex-col justify-center items-center py-20 bg-red-50 dark:bg-red-900/10 rounded-lg"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+            >
+              <AlertTriangle className="h-10 w-10 text-destructive" />
+              <p className="mt-4 text-lg font-medium text-destructive">Failed to load data</p>
+              <p className="text-muted-foreground">{error}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Funds Display */}
+        {!loading && !error && (
+          <motion.div 
+            className="space-y-4"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            <AnimatePresence>
+              {allFunds.length > 0 ? allFunds.map((fund, index) => (
+                <motion.div
+                  key={fund.id}
+                  variants={itemVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit={{ opacity: 0, x: -100 }}
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Card className="shadow-soft hover:shadow-hover transition-all duration-300 border-l-4 border-l-transparent hover:border-l-primary card-hover">
+                    <CardContent className="p-6">
+                      <div className="grid lg:grid-cols-12 gap-6 items-center">
+                        {/* Info */}
+                        <div className="lg:col-span-4">
+                          <div className="flex items-start space-x-3">
+                            <div className="bg-primary/10 rounded-lg p-2 micro-hover">
+                              <TrendingUp className="h-6 w-6 text-primary" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <h3 className="font-semibold text-foreground">{fund.name}</h3>
+                                {fund.isRecommended && (
+                                  <Badge className="bg-primary text-primary-foreground micro-hover">
+                                    Recommended
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center space-x-3 text-sm text-muted-foreground">
+                                <Badge variant="outline">{fund.category}</Badge>
+                                <div className="flex items-center">
+                                  {Array.from({ length: 5 }).map((_, i) => (
+                                    <Star 
+                                      key={i} 
+                                      className={`h-3 w-3 ${i < fund.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                                    />
+                                  ))}
+                                  <span className="ml-1">({fund.rating})</span>
+                                </div>
+                              </div>
+                              <div className="text-sm text-muted-foreground mt-1">
+                                NAV: ₹{fund.nav} | AUM: {fund.aum}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Returns */}
+                        <div className="lg:col-span-3">
+                          <div className="text-sm text-muted-foreground mb-2">Returns (Annualized)</div>
+                          <div className="grid grid-cols-3 gap-4">
+                            {Object.entries(fund.returns).map(([period, return_]) => (
+                              <div key={period} className="text-center">
+                                <div className="text-xs text-muted-foreground">{period}</div>
+                                <div className={`font-semibold ${return_ >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  {return_ >= 0 ? '+' : ''}{return_}%
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Other Details */}
+                        <div className="lg:col-span-3 space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Expense Ratio:</span>
+                            <span className="font-medium">{fund.expenseRatio}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Risk Level:</span>
+                            <span className={`font-medium ${getRiskColor(fund.riskLevel)}`}>{fund.riskLevel}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Min SIP:</span>
+                            <span className="font-medium">{formatCurrency(fund.sipMinimum)}</span>
+                          </div>
+                        </div>
+
+                        {/* Buttons */}
+                        <div className="lg:col-span-2">
+                          <div className="flex flex-col space-y-2">
+                            <Button 
+                              size="sm" 
+                              className="bg-gradient-primary micro-press"
+                              onClick={() => handleInvestNow(fund)}
+                            >
+                              <ShoppingCart className="h-4 w-4 mr-2" />
+                              Invest Now
+                            </Button>
+                            <div className="flex space-x-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="flex-1 micro-press"
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                Details
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className={`micro-press ${watchlist.has(fund.id.toString()) ? 'text-red-500 hover:text-red-600' : ''}`}
+                                onClick={() => handleAddToWatchlist(fund)}
+                              >
+                                <Heart className={`h-4 w-4 ${watchlist.has(fund.id.toString()) ? 'fill-current' : ''}`} />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )) : (
+                <motion.div 
+                  className="text-center py-16"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <p className="text-lg text-muted-foreground">No funds found. Try a different company name.</p>
+                </motion.div>
               )}
-          </div>
-        </div>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {searchTerm.trim() ? "Search Results" : "My Watchlist"}
-            </CardTitle>
-            <CardDescription>
-              {searchTerm.trim() ? `Showing results for "${searchTerm}"` : "Funds you are currently tracking"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fund Name</TableHead>
-                  <TableHead>Latest NAV</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(isWatchlistLoading && !searchTerm.trim()) && (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-center py-4">
-                      <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                    </TableCell>
-                  </TableRow>
-                )}
-                {!isWatchlistLoading && itemsToDisplay.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
-                      {searchTerm.trim() ? "No results found." : "Your watchlist is empty. Search for funds to add them."}
-                    </TableCell>
-                  </TableRow>
-                )}
-                {itemsToDisplay.map((fund) => (
-                  <TableRow key={fund.isin}>
-                    <TableCell className="font-medium">{fund.scheme_name}</TableCell>
-                    <TableCell>
-                      {liveData[fund.isin]?.nav ? `₹${liveData[fund.isin].nav.toFixed(2)} on ${liveData[fund.isin].date}` : '...'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button size="icon" variant="ghost" onClick={() => handleBookmarkToggle(fund.isin)}>
-                        <Bookmark className={`h-5 w-5 ${bookmarkedIsins.has(fund.isin) ? 'text-blue-500 fill-current' : 'text-gray-400'}`} />
-                      </Button>
-                      {/* You can add a "Details" button here later if needed */}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </motion.main>
       <Footer />
-      {selectedFund && <FundDetailsModal fund={selectedFund} onClose={() => setSelectedFund(null)} />}
     </div>
   );
 };
