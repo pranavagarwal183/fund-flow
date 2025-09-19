@@ -9,33 +9,38 @@ import {
   Loader2,
   AlertTriangle,
   Plus,
-  Heart
+  Heart,
+  ArrowUpDown,
+  Filter
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 
 interface Fund {
-  id: number | string;
+  id: string;
   name: string;
   category: string;
   rating: number;
   nav: number;
+  low52: number;
+  high52: number;
   returns: { "1Y": number; "3Y": number; "5Y": number };
   expenseRatio: number;
   aum: string;
   riskLevel: string;
-  minInvestment: number;
-  sipMinimum: number;
-  isRecommended: boolean;
+  isRecommended?: boolean;
 }
 
-const trendingFundNames = ["ICICI", "HDFC", "Axis", "SBI", "Kotak"];
+type SortOption = "name" | "nav" | "high52" | "returns1Y";
+
+const trendingFundNames = ["ICICI Mutual Fund", "HDFC Mutual Fund", "Axis Mutual Fund", "SBI Mutual Fund", "Kotak Mutual Fund"];
 
 const Watchlist = () => {
   const [allFunds, setAllFunds] = useState<Fund[]>([]);
@@ -43,18 +48,31 @@ const Watchlist = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState<SortOption>("name");
   const { toast } = useToast();
 
-  // Secure API function to fetch fund data
-  const fetchFundData = async (fundName: string) => {
-    const { data, error } = await supabase.functions.invoke('secure-api-proxy', {
-      body: {
-        endpoint: 'mutual_funds_details',
-        method: 'GET',
-        params: {
-          stock_name: fundName
-        }
+  // Load watchlist from localStorage on mount
+  useEffect(() => {
+    const savedWatchlist = localStorage.getItem('fund-watchlist');
+    if (savedWatchlist) {
+      try {
+        const parsed = JSON.parse(savedWatchlist);
+        setWatchlist(new Set(parsed));
+      } catch (error) {
+        console.warn('Failed to parse saved watchlist:', error);
       }
+    }
+  }, []);
+
+  // Save watchlist to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('fund-watchlist', JSON.stringify(Array.from(watchlist)));
+  }, [watchlist]);
+
+  // Real-time API function to fetch fund data using Gemini
+  const fetchFundData = async (fundName: string) => {
+    const { data, error } = await supabase.functions.invoke('fetch-fund-data', {
+      body: { fundName }
     });
 
     if (error) throw new Error(error.message || 'Failed to fetch fund data');
@@ -75,30 +93,27 @@ const Watchlist = () => {
         for (const name of trendingFundNames) {
           try {
             const data = await fetchFundData(name);
-
-            const fund: Fund = {
-              id: data.basic_info.fund_name,
-              name: data.basic_info.fund_name,
-              category: data.basic_info.category,
-              rating: Math.round(data.returns.risk_metrics?.risk_rating || 0),
-              nav: data.nav_info.current_nav,
-              returns: {
-                "1Y": data.returns.absolute["1y"] || 0,
-                "3Y": data.returns.cagr["3y"] || 0,
-                "5Y": data.returns.cagr["5y"] || 0,
-              },
-              expenseRatio: data.expense_ratio.current || 0,
-              aum: `₹${Math.round(data.basic_info.fund_size).toLocaleString()} Cr`,
-              riskLevel: data.basic_info.risk_level.replace(" Risk", ""),
-              minInvestment: 500,
-              sipMinimum: 500,
-              isRecommended: data.returns.cagr["5y"] > 20 && data.expense_ratio.current < 1.5,
-            };
-
-            fetchedFunds.push(fund);
+            
+            // Add all funds returned by the API
+            data.forEach((fund: any) => {
+              const processedFund: Fund = {
+                id: fund.id || fund.name,
+                name: fund.name,
+                category: fund.category,
+                rating: fund.rating,
+                nav: fund.nav,
+                low52: fund.low52,
+                high52: fund.high52,
+                returns: fund.returns,
+                expenseRatio: fund.expenseRatio,
+                aum: fund.aum,
+                riskLevel: fund.riskLevel,
+                isRecommended: fund.returns["5Y"] > 15 && fund.expenseRatio < 2,
+              };
+              fetchedFunds.push(processedFund);
+            });
           } catch (fundError) {
             console.warn(`Failed to fetch data for ${name}:`, fundError);
-            // Continue with other funds
           }
         }
 
@@ -127,27 +142,23 @@ const Watchlist = () => {
         setError(null);
 
         const data = await fetchFundData(searchTerm);
+        
+        const processedFunds: Fund[] = data.map((fund: any) => ({
+          id: fund.id || fund.name,
+          name: fund.name,
+          category: fund.category,
+          rating: fund.rating,
+          nav: fund.nav,
+          low52: fund.low52,
+          high52: fund.high52,
+          returns: fund.returns,
+          expenseRatio: fund.expenseRatio,
+          aum: fund.aum,
+          riskLevel: fund.riskLevel,
+          isRecommended: fund.returns["5Y"] > 15 && fund.expenseRatio < 2,
+        }));
 
-        const fund: Fund = {
-          id: data.basic_info.fund_name,
-          name: data.basic_info.fund_name,
-          category: data.basic_info.category,
-          rating: Math.round(data.returns.risk_metrics?.risk_rating || 0),
-          nav: data.nav_info.current_nav,
-          returns: {
-            "1Y": data.returns.absolute["1y"] || 0,
-            "3Y": data.returns.cagr["3y"] || 0,
-            "5Y": data.returns.cagr["5y"] || 0,
-          },
-          expenseRatio: data.expense_ratio.current || 0,
-          aum: `₹${Math.round(data.basic_info.fund_size).toLocaleString()} Cr`,
-          riskLevel: data.basic_info.risk_level.replace(" Risk", ""),
-          minInvestment: 500,
-          sipMinimum: 500,
-          isRecommended: data.returns.cagr["5y"] > 20 && data.expense_ratio.current < 1.5,
-        };
-
-        setAllFunds([fund]);
+        setAllFunds(processedFunds);
       } catch (err: any) {
         setError(err.message || "Error fetching searched fund.");
       } finally {
@@ -170,6 +181,145 @@ const Watchlist = () => {
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(amount);
+
+  // Get watchlisted funds from all funds
+  const watchlistedFunds = useMemo(() => {
+    return allFunds.filter(fund => watchlist.has(fund.id.toString()));
+  }, [allFunds, watchlist]);
+
+  // Sort function
+  const sortFunds = (funds: Fund[], sortOption: SortOption) => {
+    return [...funds].sort((a, b) => {
+      switch (sortOption) {
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "nav":
+          return b.nav - a.nav;
+        case "high52":
+          return b.high52 - a.high52;
+        case "returns1Y":
+          return b.returns["1Y"] - a.returns["1Y"];
+        default:
+          return 0;
+      }
+    });
+  };
+
+  // Sorted watchlist
+  const sortedWatchlist = useMemo(() => {
+    return sortFunds(watchlistedFunds, sortBy);
+  }, [watchlistedFunds, sortBy]);
+
+  // Fund Card Component
+  const FundCard = ({ fund, isInWatchlist, onToggleWatchlist, onInvestNow }: {
+    fund: Fund;
+    isInWatchlist: boolean;
+    onToggleWatchlist: () => void;
+    onInvestNow: () => void;
+  }) => (
+    <Card className="shadow-soft hover:shadow-hover transition-all duration-300 border-l-4 border-l-transparent hover:border-l-primary card-hover">
+      <CardContent className="p-6">
+        <div className="grid lg:grid-cols-12 gap-6 items-center">
+          {/* Info */}
+          <div className="lg:col-span-4">
+            <div className="flex items-start space-x-3">
+              <div className="bg-primary/10 rounded-lg p-2 micro-hover">
+                <TrendingUp className="h-6 w-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center space-x-2 mb-1">
+                  <h3 className="font-semibold text-foreground">{fund.name}</h3>
+                  {fund.isRecommended && (
+                    <Badge className="bg-primary text-primary-foreground micro-hover">
+                      Recommended
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center space-x-3 text-sm text-muted-foreground">
+                  <Badge variant="outline">{fund.category}</Badge>
+                  <div className="flex items-center">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star 
+                        key={i} 
+                        className={`h-3 w-3 ${i < fund.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                      />
+                    ))}
+                    <span className="ml-1">({fund.rating})</span>
+                  </div>
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  NAV: ₹{fund.nav} | AUM: {fund.aum}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Returns */}
+          <div className="lg:col-span-3">
+            <div className="text-sm text-muted-foreground mb-2">Returns (Annualized)</div>
+            <div className="grid grid-cols-3 gap-4">
+              {Object.entries(fund.returns).map(([period, return_]) => (
+                <div key={period} className="text-center">
+                  <div className="text-xs text-muted-foreground">{period}</div>
+                  <div className={`font-semibold ${return_ >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {return_ >= 0 ? '+' : ''}{return_}%
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Other Details */}
+          <div className="lg:col-span-3 space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Expense Ratio:</span>
+              <span className="font-medium">{fund.expenseRatio}%</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Risk Level:</span>
+              <span className={`font-medium ${getRiskColor(fund.riskLevel)}`}>{fund.riskLevel}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">52W Range:</span>
+              <span className="font-medium">₹{fund.low52} - ₹{fund.high52}</span>
+            </div>
+          </div>
+
+          {/* Buttons */}
+          <div className="lg:col-span-2">
+            <div className="flex flex-col space-y-2">
+              <Button 
+                size="sm" 
+                className="bg-gradient-primary micro-press"
+                onClick={onInvestNow}
+              >
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Invest Now
+              </Button>
+              <div className="flex space-x-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1 micro-press"
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Details
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className={`micro-press ${isInWatchlist ? 'text-red-500 hover:text-red-600' : ''}`}
+                  onClick={onToggleWatchlist}
+                >
+                  <Heart className={`h-4 w-4 ${isInWatchlist ? 'fill-current' : ''}`} />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   const handleAddToWatchlist = (fund: Fund) => {
     const newWatchlist = new Set(watchlist);
@@ -248,6 +398,44 @@ const Watchlist = () => {
           </Card>
         </motion.div>
 
+        {/* My Watchlist Section */}
+        {sortedWatchlist.length > 0 && (
+          <motion.div variants={itemVariants} className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <Heart className="h-6 w-6 text-primary fill-current" />
+                <h2 className="text-xl font-semibold text-foreground">My Watchlist ({sortedWatchlist.length})</h2>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name">Fund Name (A-Z)</SelectItem>
+                    <SelectItem value="nav">NAV (High to Low)</SelectItem>
+                    <SelectItem value="high52">52-Week High (High to Low)</SelectItem>
+                    <SelectItem value="returns1Y">1Y Returns (High to Low)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {sortedWatchlist.map((fund) => (
+                <FundCard 
+                  key={fund.id} 
+                  fund={fund} 
+                  isInWatchlist={true}
+                  onToggleWatchlist={() => handleAddToWatchlist(fund)}
+                  onInvestNow={() => handleInvestNow(fund)}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+
         {/* Loading and Error */}
         <AnimatePresence>
           {loading && (
@@ -275,7 +463,7 @@ const Watchlist = () => {
           )}
         </AnimatePresence>
 
-        {/* Funds Display */}
+        {/* Search Results / Trending Funds */}
         {!loading && !error && (
           <motion.div 
             className="space-y-4"
@@ -283,6 +471,17 @@ const Watchlist = () => {
             initial="hidden"
             animate="visible"
           >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-foreground">
+                {searchTerm ? `Search Results for "${searchTerm}"` : "Trending Funds"}
+              </h2>
+              {allFunds.length > 0 && (
+                <span className="text-muted-foreground text-sm">
+                  {allFunds.length} fund{allFunds.length !== 1 ? 's' : ''} found
+                </span>
+              )}
+            </div>
+
             <AnimatePresence>
               {allFunds.length > 0 ? allFunds.map((fund, index) => (
                 <motion.div
@@ -294,108 +493,12 @@ const Watchlist = () => {
                   whileHover={{ scale: 1.02 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <Card className="shadow-soft hover:shadow-hover transition-all duration-300 border-l-4 border-l-transparent hover:border-l-primary card-hover">
-                    <CardContent className="p-6">
-                      <div className="grid lg:grid-cols-12 gap-6 items-center">
-                        {/* Info */}
-                        <div className="lg:col-span-4">
-                          <div className="flex items-start space-x-3">
-                            <div className="bg-primary/10 rounded-lg p-2 micro-hover">
-                              <TrendingUp className="h-6 w-6 text-primary" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-1">
-                                <h3 className="font-semibold text-foreground">{fund.name}</h3>
-                                {fund.isRecommended && (
-                                  <Badge className="bg-primary text-primary-foreground micro-hover">
-                                    Recommended
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="flex items-center space-x-3 text-sm text-muted-foreground">
-                                <Badge variant="outline">{fund.category}</Badge>
-                                <div className="flex items-center">
-                                  {Array.from({ length: 5 }).map((_, i) => (
-                                    <Star 
-                                      key={i} 
-                                      className={`h-3 w-3 ${i < fund.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
-                                    />
-                                  ))}
-                                  <span className="ml-1">({fund.rating})</span>
-                                </div>
-                              </div>
-                              <div className="text-sm text-muted-foreground mt-1">
-                                NAV: ₹{fund.nav} | AUM: {fund.aum}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Returns */}
-                        <div className="lg:col-span-3">
-                          <div className="text-sm text-muted-foreground mb-2">Returns (Annualized)</div>
-                          <div className="grid grid-cols-3 gap-4">
-                            {Object.entries(fund.returns).map(([period, return_]) => (
-                              <div key={period} className="text-center">
-                                <div className="text-xs text-muted-foreground">{period}</div>
-                                <div className={`font-semibold ${return_ >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                  {return_ >= 0 ? '+' : ''}{return_}%
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Other Details */}
-                        <div className="lg:col-span-3 space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Expense Ratio:</span>
-                            <span className="font-medium">{fund.expenseRatio}%</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Risk Level:</span>
-                            <span className={`font-medium ${getRiskColor(fund.riskLevel)}`}>{fund.riskLevel}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Min SIP:</span>
-                            <span className="font-medium">{formatCurrency(fund.sipMinimum)}</span>
-                          </div>
-                        </div>
-
-                        {/* Buttons */}
-                        <div className="lg:col-span-2">
-                          <div className="flex flex-col space-y-2">
-                            <Button 
-                              size="sm" 
-                              className="bg-gradient-primary micro-press"
-                              onClick={() => handleInvestNow(fund)}
-                            >
-                              <ShoppingCart className="h-4 w-4 mr-2" />
-                              Invest Now
-                            </Button>
-                            <div className="flex space-x-2">
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="flex-1 micro-press"
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                Details
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                className={`micro-press ${watchlist.has(fund.id.toString()) ? 'text-red-500 hover:text-red-600' : ''}`}
-                                onClick={() => handleAddToWatchlist(fund)}
-                              >
-                                <Heart className={`h-4 w-4 ${watchlist.has(fund.id.toString()) ? 'fill-current' : ''}`} />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <FundCard 
+                    fund={fund}
+                    isInWatchlist={watchlist.has(fund.id.toString())}
+                    onToggleWatchlist={() => handleAddToWatchlist(fund)}
+                    onInvestNow={() => handleInvestNow(fund)}
+                  />
                 </motion.div>
               )) : (
                 <motion.div 
@@ -403,7 +506,9 @@ const Watchlist = () => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                 >
-                  <p className="text-lg text-muted-foreground">No funds found. Try a different company name.</p>
+                  <p className="text-lg text-muted-foreground">
+                    {searchTerm ? "No funds found. Try a different search term." : "No trending funds available at the moment."}
+                  </p>
                 </motion.div>
               )}
             </AnimatePresence>
