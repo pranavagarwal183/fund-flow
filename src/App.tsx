@@ -18,6 +18,7 @@ import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 import PortfolioAnalysis from "./pages/PortfolioAnalysis";
 import Learn from "./pages/Learn";
+import Admin from "./pages/Admin";
 
 // Import AuthProvider and ProtectedRoute
 import { AuthProvider } from "./components/AuthProvider";
@@ -66,6 +67,7 @@ const App = () => (
             <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
             <Route path="/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
             <Route path="/portfolio-analysis" element={<ProtectedRoute><PortfolioAnalysis /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
