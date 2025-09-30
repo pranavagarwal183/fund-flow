@@ -103,5 +103,3 @@ export const checkRateLimit = (identifier: string): boolean => {
   return true;
 };
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";

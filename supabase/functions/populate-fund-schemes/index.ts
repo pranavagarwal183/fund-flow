@@ -97,7 +97,7 @@ serve(async (req) => {
 
 Only return the JSON object, no additional text or explanation.`;
 
-        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=' + GEMINI_API_KEY, {
+        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_API_KEY, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -122,7 +122,17 @@ Only return the JSON object, no additional text or explanation.`;
             console.log(`Rate limited for fund: ${fund.fund_name}, skipping...`);
             continue;
           }
-          throw new Error(`Gemini API error: ${response.status}`);
+          
+          if (response.status === 404) {
+            throw new Error('Gemini API model not found. Please check your API key and model availability.');
+          }
+          
+          if (response.status === 403) {
+            throw new Error('Gemini API access denied. Please check your API key permissions.');
+          }
+          
+          const errorText = await response.text();
+          throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();

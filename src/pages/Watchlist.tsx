@@ -49,6 +49,7 @@ const Watchlist = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<SortOption>("name");
+  const [dataFreshness, setDataFreshness] = useState<string>("");
   const { toast } = useToast();
 
   // Load watchlist from localStorage on mount
@@ -69,96 +70,102 @@ const Watchlist = () => {
     localStorage.setItem('fund-watchlist', JSON.stringify(Array.from(watchlist)));
   }, [watchlist]);
 
-  // Real-time API function to fetch fund data using Gemini
-  const fetchFundData = async (fundName: string) => {
-    const { data, error } = await supabase.functions.invoke('fetch-fund-data', {
-      body: { fundName }
-    });
+  // Fetch fund data from local cache
+  const fetchFundData = async (searchTerm?: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-cached-fund-data', {
+        body: { 
+          searchTerm: searchTerm || '',
+          limit: 100
+        }
+      });
 
-    if (error) throw new Error(error.message || 'Failed to fetch fund data');
-    if (!data.success) throw new Error(data.error || 'API request failed');
-    
-    return data.data;
+      if (error) throw new Error(error.message || 'Failed to fetch fund data');
+      if (!data.success) throw new Error(data.error || 'API request failed');
+      
+      return {
+        funds: data.data,
+        metadata: data.metadata
+      };
+    } catch (error) {
+      // Fallback to mock data if cache fails
+      console.warn('Cache failed, using fallback data:', error);
+      return {
+        funds: getMockFundData(searchTerm || 'Sample'),
+        metadata: {
+          data_freshness: 'Using fallback data - cache unavailable'
+        }
+      };
+    }
   };
 
-  // 🔁 Fetch trending funds on first load
+  // Mock data fallback when API is unavailable
+  const getMockFundData = (fundName: string) => {
+    const mockFunds = [
+      {
+        id: `${fundName.toLowerCase().replace(/\s+/g, '-')}-1`,
+        name: `${fundName} Large Cap Fund`,
+        category: "Large Cap",
+        nav: 45.67,
+        low52: 38.90,
+        high52: 52.30,
+        expenseRatio: 1.2,
+        aum: "₹2,450 Cr",
+        riskLevel: "Moderate",
+        returns: { "1Y": 12.5, "3Y": 15.8, "5Y": 18.2 },
+        rating: 4
+      },
+      {
+        id: `${fundName.toLowerCase().replace(/\s+/g, '-')}-2`,
+        name: `${fundName} Mid Cap Fund`,
+        category: "Mid Cap",
+        nav: 28.45,
+        low52: 22.10,
+        high52: 35.80,
+        expenseRatio: 1.8,
+        aum: "₹1,230 Cr",
+        riskLevel: "High",
+        returns: { "1Y": 18.7, "3Y": 22.1, "5Y": 25.4 },
+        rating: 4
+      }
+    ];
+    return mockFunds;
+  };
+
+  // 🔁 Fetch funds from cache on first load
   useEffect(() => {
-    const fetchTrendingFunds = async () => {
+    const fetchCachedFunds = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const fetchedFunds: Fund[] = [];
-
-        for (const name of trendingFundNames) {
-          try {
-            const data = await fetchFundData(name);
-            
-            // Add all funds returned by the API
-            data.forEach((fund: any) => {
-              const processedFund: Fund = {
-                id: fund.id || fund.name,
-                name: fund.name,
-                category: fund.category,
-                rating: fund.rating,
-                nav: fund.nav,
-                low52: fund.low52,
-                high52: fund.high52,
-                returns: fund.returns,
-                expenseRatio: fund.expenseRatio,
-                aum: fund.aum,
-                riskLevel: fund.riskLevel,
-                isRecommended: fund.returns["5Y"] > 15 && fund.expenseRatio < 2,
-              };
-              fetchedFunds.push(processedFund);
-            });
-          } catch (fundError) {
-            console.warn(`Failed to fetch data for ${name}:`, fundError);
-          }
-        }
-
-        if (fetchedFunds.length === 0) {
-          throw new Error("No funds could be loaded from the trending list");
-        }
-
-        setAllFunds(fetchedFunds);
+        const result = await fetchFundData();
+        
+        setAllFunds(result.funds);
+        setDataFreshness(result.metadata.data_freshness || 'Data freshness unknown');
+        
       } catch (err: any) {
-        setError(err.message || "Failed to fetch trending funds.");
+        setError(err.message || "Failed to fetch fund data from cache.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTrendingFunds();
+    fetchCachedFunds();
   }, []);
 
   // 🔍 Search logic (debounced)
   useEffect(() => {
-    if (!searchTerm) return;
-
     const timeout = setTimeout(async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const data = await fetchFundData(searchTerm);
+        const result = await fetchFundData(searchTerm);
         
-        const processedFunds: Fund[] = data.map((fund: any) => ({
-          id: fund.id || fund.name,
-          name: fund.name,
-          category: fund.category,
-          rating: fund.rating,
-          nav: fund.nav,
-          low52: fund.low52,
-          high52: fund.high52,
-          returns: fund.returns,
-          expenseRatio: fund.expenseRatio,
-          aum: fund.aum,
-          riskLevel: fund.riskLevel,
-          isRecommended: fund.returns["5Y"] > 15 && fund.expenseRatio < 2,
-        }));
-
-        setAllFunds(processedFunds);
+        setAllFunds(result.funds);
+        setDataFreshness(result.metadata.data_freshness || 'Data freshness unknown');
+        
       } catch (err: any) {
         setError(err.message || "Error fetching searched fund.");
       } finally {
@@ -377,8 +384,22 @@ const Watchlist = () => {
       >
         {/* Header */}
         <motion.div className="mb-8" variants={itemVariants}>
-          <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">Discover Mutual Funds</h1>
-          <p className="text-muted-foreground">Explore and search from our comprehensive fund database - no login required</p>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">Discover Mutual Funds</h1>
+              <p className="text-muted-foreground">Explore and search from our comprehensive fund database - no login required</p>
+            </div>
+            {dataFreshness && (
+              <div className="mt-4 lg:mt-0">
+                <div className="bg-muted/50 rounded-lg px-3 py-2 text-sm">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-muted-foreground">{dataFreshness}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </motion.div>
 
         {/* Search Input */}

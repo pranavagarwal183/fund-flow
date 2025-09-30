@@ -4,8 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { useMobile } from "@/hooks/use-mobile";
-import { createClient } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { supabase } from "@/integrations/supabase/client";
 
 type ChatMessage = {
   id: string;
@@ -14,8 +14,8 @@ type ChatMessage = {
 };
 
 export function FundBotWidget(): JSX.Element {
-  const isMobile = useMobile();
-  const supabase = useMemo(() => createClient(), []);
+  const isMobile = useIsMobile();
+  const supabaseClient = useMemo(() => supabase, []);
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -48,7 +48,7 @@ export function FundBotWidget(): JSX.Element {
     setMessages((prev) => [...prev, userMsg]);
 
     try {
-      const { data, error } = await supabase.functions.invoke("fundbot-chat", {
+      const { data, error } = await supabaseClient.functions.invoke("fundbot-chat", {
         body: { message: text },
       });
 
@@ -87,7 +87,7 @@ export function FundBotWidget(): JSX.Element {
         scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
       }, 50);
     }
-  }, [input, isSending, supabase]);
+  }, [input, isSending, supabaseClient]);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
