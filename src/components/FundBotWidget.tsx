@@ -114,40 +114,38 @@ export function FundBotWidget(): JSX.Element {
   );
 
   const ChatContent = (
-    <div className="flex h-full flex-col">
-      <div className="border-b px-4 py-3">
+    <div className="flex h-full flex-col max-h-[600px]">
+      <div className="border-b px-4 py-3 flex-shrink-0">
         <p className="text-lg font-semibold">🤖 FundBot</p>
         <p className="text-xs text-muted-foreground">Ask about Indian mutual funds</p>
       </div>
-      <div className="flex min-h-0 flex-1 flex-col">
-        <ScrollArea className="flex-1 px-4 py-3" ref={scrollRef as any}>
-          <div className="space-y-3">
-            {messages.map((m) => (
-              <div
-                key={m.id}
-                className={
-                  m.role === "user"
-                    ? "ml-auto max-w-[75%] rounded-2xl bg-primary px-4 py-2 text-sm text-primary-foreground"
-                    : "mr-auto max-w-[75%] rounded-2xl bg-muted px-4 py-2 text-sm"
-                }
-              >
-                {m.content}
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
-        <div className="flex items-center gap-2 border-t p-3">
-          <Input
-            placeholder="Ask about Indian mutual funds..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={onKeyDown}
-            disabled={isSending}
-          />
-          <Button onClick={sendMessage} disabled={isSending}>
-            Send
-          </Button>
+      <ScrollArea className="flex-1 px-4 py-3 overflow-y-auto" ref={scrollRef as any}>
+        <div className="space-y-3 pb-2">
+          {messages.map((m) => (
+            <div
+              key={m.id}
+              className={
+                m.role === "user"
+                  ? "ml-auto max-w-[75%] rounded-2xl bg-primary px-4 py-2 text-sm text-primary-foreground break-words"
+                  : "mr-auto max-w-[75%] rounded-2xl bg-muted px-4 py-2 text-sm break-words"
+              }
+            >
+              {m.content}
+            </div>
+          ))}
         </div>
+      </ScrollArea>
+      <div className="flex items-center gap-2 border-t p-3 flex-shrink-0">
+        <Input
+          placeholder="Ask about Indian mutual funds..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={onKeyDown}
+          disabled={isSending}
+        />
+        <Button onClick={sendMessage} disabled={isSending}>
+          Send
+        </Button>
       </div>
     </div>
   );
@@ -157,7 +155,7 @@ export function FundBotWidget(): JSX.Element {
       <>
         {TriggerButton}
         <Sheet open={open} onOpenChange={handleOpenChange}>
-          <SheetContent side="bottom" className="h-[75vh] p-0">
+          <SheetContent side="bottom" className="h-[80vh] max-h-[600px] p-0">
             {ChatContent}
           </SheetContent>
         </Sheet>
@@ -166,17 +164,17 @@ export function FundBotWidget(): JSX.Element {
   }
 
   return (
-    <>
-      {TriggerButton}
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
-          <DialogHeader className="sr-only">
-            <DialogTitle>FundBot</DialogTitle>
-          </DialogHeader>
-          {ChatContent}
-        </DialogContent>
-      </Dialog>
-    </>
+      <>
+        {TriggerButton}
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+          <DialogContent className="sm:max-w-lg h-[600px] p-0 overflow-hidden flex flex-col">
+            <DialogHeader className="sr-only">
+              <DialogTitle>FundBot</DialogTitle>
+            </DialogHeader>
+            {ChatContent}
+          </DialogContent>
+        </Dialog>
+      </>
   );
 }
 

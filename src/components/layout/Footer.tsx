@@ -26,7 +26,7 @@ export const Footer = () => {
               <span className="font-bold text-xl">FundFlow</span>
             </Link>
             
-            <p className="text-background/80 mb-6 leading-relaxed">
+            <p className="text-background/80 dark:text-muted-foreground mb-6 leading-relaxed">
               India's most trusted expert-guided mutual fund investment platform. 
               Build wealth systematically with professional portfolio management and personalized service.
             </p>
@@ -52,27 +52,27 @@ export const Footer = () => {
             <h3 className="font-semibold text-lg mb-6">Quick Links</h3>
             <ul className="space-y-3">
               <li>
-                <Link to="/dashboard" className="text-background/80 hover:text-background transition-colors">
+                <Link to="/dashboard" className="text-background/80 dark:text-muted-foreground hover:text-background dark:hover:text-foreground transition-colors">
                   Dashboard
                 </Link>
               </li>
               <li>
-                <Link to="/funds" className="text-background/80 hover:text-background transition-colors">
+                <Link to="/funds" className="text-background/80 dark:text-muted-foreground hover:text-background dark:hover:text-foreground transition-colors">
                   Explore Funds
                 </Link>
               </li>
               <li>
-                <Link to="/calculators" className="text-background/80 hover:text-background transition-colors">
+                <Link to="/calculators" className="text-background/80 dark:text-muted-foreground hover:text-background dark:hover:text-foreground transition-colors">
                   Calculators
                 </Link>
               </li>
               <li>
-                <Link to="/goals" className="text-background/80 hover:text-background transition-colors">
+                <Link to="/goals" className="text-background/80 dark:text-muted-foreground hover:text-background dark:hover:text-foreground transition-colors">
                   Goal Planning
                 </Link>
               </li>
               <li>
-                <Link to="/portfolio" className="text-background/80 hover:text-background transition-colors">
+                <Link to="/portfolio" className="text-background/80 dark:text-muted-foreground hover:text-background dark:hover:text-foreground transition-colors">
                   My Portfolio
                 </Link>
               </li>
@@ -84,27 +84,27 @@ export const Footer = () => {
             <h3 className="font-semibold text-lg mb-6">Resources</h3>
             <ul className="space-y-3">
               <li>
-                <Link to="/mutual-funds" className="text-background/80 hover:text-background transition-colors">
+                <Link to="/mutual-funds" className="text-background/80 dark:text-muted-foreground hover:text-background dark:hover:text-foreground transition-colors">
                   Mutual Fund Education
                 </Link>
               </li>
               <li>
-                <Link to="/blog" className="text-background/80 hover:text-background transition-colors">
+                <Link to="/blog" className="text-background/80 dark:text-muted-foreground hover:text-background dark:hover:text-foreground transition-colors">
                   Investment Blog
                 </Link>
               </li>
               <li>
-                <Link to="/help" className="text-background/80 hover:text-background transition-colors">
+                <Link to="/help" className="text-background/80 dark:text-muted-foreground hover:text-background dark:hover:text-foreground transition-colors">
                   Help Center
                 </Link>
               </li>
               <li>
-                <Link to="/webinars" className="text-background/80 hover:text-background transition-colors">
+                <Link to="/webinars" className="text-background/80 dark:text-muted-foreground hover:text-background dark:hover:text-foreground transition-colors">
                   Webinars
                 </Link>
               </li>
               <li>
-                <Link to="/tax-center" className="text-background/80 hover:text-background transition-colors">
+                <Link to="/tax-center" className="text-background/80 dark:text-muted-foreground hover:text-background dark:hover:text-foreground transition-colors">
                   Tax Center
                 </Link>
               </li>
@@ -117,15 +117,15 @@ export const Footer = () => {
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
                 <Phone className="h-5 w-5 text-primary" />
-                <span className="text-background/80">+91 98765 43210</span>
+                <span className="text-background/80 dark:text-muted-foreground">+91 98765 43210</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="h-5 w-5 text-primary" />
-                <span className="text-background/80">support@fundflow.in</span>
+                <span className="text-background/80 dark:text-muted-foreground">support@fundflow.in</span>
               </div>
               <div className="flex items-start space-x-3">
                 <MapPin className="h-5 w-5 text-primary mt-1" />
-                <span className="text-background/80">
+                <span className="text-background/80 dark:text-muted-foreground">
                   Plot No. 123, Cyber City,<br />
                   Gurugram, Haryana 122002
                 </span>
@@ -136,11 +136,11 @@ export const Footer = () => {
             <div className="mt-6 pt-6 border-t border-background/20">
               <div className="flex items-center space-x-2 mb-2">
                 <Shield className="h-4 w-4 text-primary" />
-                <span className="text-sm text-background/80">SEBI Reg: INH000001234</span>
+                <span className="text-sm text-background/80 dark:text-muted-foreground">SEBI Reg: INH000001234</span>
               </div>
               <div className="flex items-center space-x-2">
                 <FileText className="h-4 w-4 text-primary" />
-                <span className="text-sm text-background/80">AMFI Reg: ARN-12345</span>
+                <span className="text-sm text-background/80 dark:text-muted-foreground">AMFI Reg: ARN-12345</span>
               </div>
             </div>
           </div>
@@ -149,27 +149,27 @@ export const Footer = () => {
         {/* Bottom Section */}
         <div className="border-t border-background/20 mt-12 pt-8">
           <div className="flex flex-col lg:flex-row justify-between items-center space-y-4 lg:space-y-0">
-            <div className="text-background/80 text-sm">
+            <div className="text-background/80 dark:text-muted-foreground text-sm">
               © 2025 FundFlow. All rights reserved.
             </div>
             
             <div className="flex flex-wrap justify-center lg:justify-end space-x-6 text-sm">
-              <Link to="/privacy" className="text-background/80 hover:text-background transition-colors">
+              <Link to="/privacy" className="text-background/80 dark:text-muted-foreground hover:text-background dark:hover:text-foreground transition-colors">
                 Privacy Policy
               </Link>
-              <Link to="/terms" className="text-background/80 hover:text-background transition-colors">
+              <Link to="/terms" className="text-background/80 dark:text-muted-foreground hover:text-background dark:hover:text-foreground transition-colors">
                 Terms of Service
               </Link>
-              <Link to="/risk-disclaimer" className="text-background/80 hover:text-background transition-colors">
+              <Link to="/risk-disclaimer" className="text-background/80 dark:text-muted-foreground hover:text-background dark:hover:text-foreground transition-colors">
                 Risk Disclaimer
               </Link>
-              <Link to="/grievance" className="text-background/80 hover:text-background transition-colors">
+              <Link to="/grievance" className="text-background/80 dark:text-muted-foreground hover:text-background dark:hover:text-foreground transition-colors">
                 Grievance Policy
               </Link>
             </div>
           </div>
           
-          <div className="mt-6 pt-6 border-t border-background/20 text-xs text-background/60 text-center">
+          <div className="mt-6 pt-6 border-t border-background/20 text-xs text-background/60 dark:text-muted-foreground/80 text-center">
             <p>
               For detailed risk information and disclaimers, please visit our{" "}
               <Link to="/risk-disclaimer" className="text-primary hover:underline">
